@@ -1,0 +1,31 @@
+# Deploy your own
+
+Stash runs on a Supabase project (database, auth, Edge Function) and a Cloudflare Worker (the web app).
+
+## Supabase
+
+1. Create a project, then `supabase link --project-ref <ref>`.
+2. `pnpm run supabase:deploy` applies the migrations and deploys the function.
+3. Set the function's secret: `supabase secrets set STASH_SITE_URL=<site>`, where `<site>` is the web app's URL (see Cloudflare).
+4. Auth settings SHOULD match `[auth]` in `supabase/config.toml`: sign-ups off, email provider on, minimum password length 8. Stash sends no email.
+5. Create your account under Authentication → Users (email, password, confirmed). Stash has no sign-up: it is yours.
+
+## Cloudflare
+
+1. Fill in `.env` from `.env.example`.
+2. `pnpm run deploy`. The site is `https://<name>.<subdomain>.workers.dev`, where `<name>` is `name` in `app/wrangler.jsonc`.
+
+## CI
+
+`.github/workflows/ci.yml` deploys `main` and then runs the e2e specs against the site. It reads these repository settings:
+
+| Variables               | Secrets                 |
+| ----------------------- | ----------------------- |
+| `SUPABASE_PROJECT_ID`   | `SUPABASE_ACCESS_TOKEN` |
+| `SUPABASE_URL`          | `SUPABASE_DB_PASSWORD`  |
+| `VITE_SUPABASE_URL`     | `SUPABASE_SECRET_KEY`   |
+| `CLOUDFLARE_ACCOUNT_ID` | `VITE_SUPABASE_KEY`     |
+| `PRODUCTION_URL`        | `CLOUDFLARE_API_TOKEN`  |
+| `STASH_TEST_EMAIL`      |                         |
+
+`PRODUCTION_URL` is `<site>`. The rest match `.env.example`, or come from the Supabase and Cloudflare dashboards.

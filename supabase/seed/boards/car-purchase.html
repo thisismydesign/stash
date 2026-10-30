@@ -1,0 +1,174 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Car purchase</title>
+<style>
+  :root { color-scheme: light dark; --bg: #f5f7f7; --card: #fff; --text: #1d1d22; --muted: #6b6b76; --line: #e3e7e6; --accent: #0ca678; }
+  @media (prefers-color-scheme: dark) { :root { --bg: #1a1b1e; --card: #25262b; --text: #e9e9ec; --muted: #9a9aa6; --line: #373a40; --accent: #20c997; } }
+  * { box-sizing: border-box; }
+  body { margin: 0; padding: 16px; font: 15px/1.45 -apple-system, "Segoe UI", Roboto, Helvetica, Arial, sans-serif; background: var(--bg); color: var(--text); }
+  h1 { margin: 0 0 4px; font-size: 22px; }
+  .note { color: var(--muted); font-size: 13px; margin-bottom: 14px; }
+  .filters { display: flex; flex-wrap: wrap; gap: 6px; margin-bottom: 16px; }
+  .filters button { font: inherit; font-size: 13px; padding: 5px 11px; border: 1px solid var(--line); border-radius: 999px; background: var(--card); color: var(--text); cursor: pointer; }
+  .filters button[aria-pressed="true"] { background: var(--accent); border-color: var(--accent); color: #fff; }
+  section { margin-bottom: 22px; }
+  section[hidden] { display: none; }
+  h2 { font-size: 16px; margin: 0 0 4px; }
+  .why { color: var(--muted); font-size: 13px; margin: 0 0 10px; }
+  .grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(250px, 1fr)); gap: 14px; }
+  .card { background: var(--card); border: 1px solid var(--line); border-radius: 14px; overflow: hidden; display: flex; flex-direction: column; }
+  .pic { aspect-ratio: 16 / 10; background: var(--swatch); }
+  .pic img { width: 100%; height: 100%; object-fit: cover; display: block; }
+  .body { padding: 12px 14px 14px; display: flex; flex-direction: column; gap: 8px; flex: 1; }
+  .body h3 { margin: 0; font-size: 16px; }
+  .price { font-weight: 600; color: var(--accent); }
+  .desc { margin: 0; font-size: 13px; }
+  .pros, .cons { margin: 0; padding-left: 18px; font-size: 13px; }
+  .pros li::marker { color: #2f9e44; } .cons li::marker { color: #e03131; }
+  .links { margin-top: auto; font-size: 13px; }
+  a { color: var(--accent); }
+</style>
+</head>
+<body>
+<h1>Car purchase</h1>
+<div class="note">One car to replace the old hatchback. Prices are rough used-market asks in EUR, 2 to 4 years old.</div>
+
+<div class="filters" id="filters">
+  <button aria-pressed="true" data-cat="">All</button>
+  <button data-cat="city">City</button>
+  <button data-cat="family">Family</button>
+  <button data-cat="electric">Electric</button>
+  <button data-cat="weekend">Weekend</button>
+</div>
+
+<section data-cat="city">
+  <h2>City</h2>
+  <p class="why">Cheap to own, easy to park. Enough if the long trips stay rare.</p>
+  <div class="grid">
+    <article class="card" style="--swatch:#8c3b3b">
+      <div class="pic"><img src="https://upload.wikimedia.org/wikipedia/commons/thumb/3/3e/2020_Toyota_Yaris_Design_HEV_CVT_1.5_Front.jpg/500px-2020_Toyota_Yaris_Design_HEV_CVT_1.5_Front.jpg" alt="Toyota Yaris" loading="lazy" onerror="this.remove()"></div>
+      <div class="body">
+        <h3>Toyota Yaris Hybrid</h3>
+        <div class="price">€16–21k</div>
+        <p class="desc">The default small hybrid. Sips fuel in town, and Toyota's hybrids have a long record of not breaking.</p>
+        <ul class="pros"><li>4 l/100 km in the city</li><li>Holds its value</li></ul>
+        <ul class="cons"><li>Small boot, tight back seat</li><li>Noisy on the motorway</li></ul>
+        <div class="links"><a href="https://en.wikipedia.org/wiki/Toyota_Yaris_(XP210)" target="_blank" rel="noopener">Wikipedia</a></div>
+      </div>
+    </article>
+    <article class="card" style="--swatch:#3b5b8c">
+      <div class="pic"><img src="https://upload.wikimedia.org/wikipedia/commons/thumb/4/44/Hyundai_i10_1.0_Intro_%28III%29_%E2%80%93_f_03012021.jpg/500px-Hyundai_i10_1.0_Intro_%28III%29_%E2%80%93_f_03012021.jpg" alt="Hyundai i10" loading="lazy" onerror="this.remove()"></div>
+      <div class="body">
+        <h3>Hyundai i10</h3>
+        <div class="price">€11–15k</div>
+        <p class="desc">The budget option. A plain petrol engine, a 5-year warranty from new, and nothing to go wrong.</p>
+        <ul class="pros"><li>Cheapest to buy and insure</li><li>Surprisingly roomy for its size</li></ul>
+        <ul class="cons"><li>Slow with four people aboard</li><li>Basic interior</li></ul>
+        <div class="links"><a href="https://en.wikipedia.org/wiki/Hyundai_i10" target="_blank" rel="noopener">Wikipedia</a></div>
+      </div>
+    </article>
+  </div>
+</section>
+
+<section data-cat="family">
+  <h2>Family</h2>
+  <p class="why">Estates, for the bikes, the dog and the holiday luggage all at once.</p>
+  <div class="grid">
+    <article class="card" style="--swatch:#4d7a3b">
+      <div class="pic"><img src="https://upload.wikimedia.org/wikipedia/commons/thumb/e/ea/Skoda_Octavia_IV_liftback_%28cropped%29.jpg/500px-Skoda_Octavia_IV_liftback_%28cropped%29.jpg" alt="Škoda Octavia" loading="lazy" onerror="this.remove()"></div>
+      <div class="body">
+        <h3>Škoda Octavia Combi</h3>
+        <div class="price">€22–30k</div>
+        <p class="desc">The sensible estate. VW Group underneath, more space than a Golf, and the whole family fits with luggage to spare.</p>
+        <ul class="pros"><li>640-litre boot</li><li>Diesel does 1,000 km on a tank</li></ul>
+        <ul class="cons"><li>Fiddly touchscreen controls</li><li>Dull to drive</li></ul>
+        <div class="links"><a href="https://en.wikipedia.org/wiki/%C5%A0koda_Octavia" target="_blank" rel="noopener">Wikipedia</a></div>
+      </div>
+    </article>
+    <article class="card" style="--swatch:#5a5a66">
+      <div class="pic"><img src="https://upload.wikimedia.org/wikipedia/commons/thumb/1/1b/2018_Volvo_V60_Inscription_PRO_D4_Automatic_2.0.jpg/500px-2018_Volvo_V60_Inscription_PRO_D4_Automatic_2.0.jpg" alt="Volvo V60" loading="lazy" onerror="this.remove()"></div>
+      <div class="body">
+        <h3>Volvo V60</h3>
+        <div class="price">€28–38k</div>
+        <p class="desc">The nice estate. Best seats in the class, a calm interior, and a plug-in version that covers the commute on electricity.</p>
+        <ul class="pros"><li>Comfort and safety kit</li><li>Plug-in hybrid option</li></ul>
+        <ul class="cons"><li>Servicing costs</li><li>Smaller boot than the Octavia</li></ul>
+        <div class="links"><a href="https://en.wikipedia.org/wiki/Volvo_V60" target="_blank" rel="noopener">Wikipedia</a></div>
+      </div>
+    </article>
+  </div>
+</section>
+
+<section data-cat="electric">
+  <h2>Electric</h2>
+  <p class="why">Only if the landlord agrees to a charger in the garage. Ask first.</p>
+  <div class="grid">
+    <article class="card" style="--swatch:#6b6b76">
+      <div class="pic"><img src="https://upload.wikimedia.org/wikipedia/commons/thumb/8/85/Hyundai_Ioniq_5_AWD_Techniq-Paket_%E2%80%93_f_31122024.jpg/500px-Hyundai_Ioniq_5_AWD_Techniq-Paket_%E2%80%93_f_31122024.jpg" alt="Hyundai Ioniq 5" loading="lazy" onerror="this.remove()"></div>
+      <div class="body">
+        <h3>Hyundai Ioniq 5</h3>
+        <div class="price">€30–40k</div>
+        <p class="desc">Fast charging and a flat floor make it the most practical EV here. Looks like a concept car, drives like a sofa.</p>
+        <ul class="pros"><li>10 to 80% in 18 minutes</li><li>Huge cabin</li></ul>
+        <ul class="cons"><li>Wide for old car parks</li><li>Range drops hard in winter</li></ul>
+        <div class="links"><a href="https://en.wikipedia.org/wiki/Hyundai_Ioniq_5" target="_blank" rel="noopener">Wikipedia</a></div>
+      </div>
+    </article>
+    <article class="card" style="--swatch:#c2a63b">
+      <div class="pic"><img src="https://upload.wikimedia.org/wikipedia/commons/thumb/2/22/2020_Volkswagen_ID.3_1st_Front.jpg/500px-2020_Volkswagen_ID.3_1st_Front.jpg" alt="Volkswagen ID.3" loading="lazy" onerror="this.remove()"></div>
+      <div class="body">
+        <h3>Volkswagen ID.3</h3>
+        <div class="price">€20–27k</div>
+        <p class="desc">The Golf-sized EV. Early cars are cheap now because the software was rough; later ones fixed most of it.</p>
+        <ul class="pros"><li>Compact, easy to park</li><li>Plenty on the used market</li></ul>
+        <ul class="cons"><li>Check the software version</li><li>Cheap interior plastics</li></ul>
+        <div class="links"><a href="https://en.wikipedia.org/wiki/Volkswagen_ID.3" target="_blank" rel="noopener">Wikipedia</a></div>
+      </div>
+    </article>
+  </div>
+</section>
+
+<section data-cat="weekend">
+  <h2>Weekend</h2>
+  <p class="why">For the mountain cabin and the forest tracks. The heart's pick, not the head's.</p>
+  <div class="grid">
+    <article class="card" style="--swatch:#3b7a6b">
+      <div class="pic"><img src="https://upload.wikimedia.org/wikipedia/commons/thumb/1/13/2019_Suzuki_Jimny_SZ5_4X4_Automatic_1.5.jpg/500px-2019_Suzuki_Jimny_SZ5_4X4_Automatic_1.5.jpg" alt="Suzuki Jimny" loading="lazy" onerror="this.remove()"></div>
+      <div class="body">
+        <h3>Suzuki Jimny</h3>
+        <div class="price">€22–28k</div>
+        <p class="desc">A tiny proper off-roader with a ladder frame and low-range gears. Everyone smiles at it. Terrible on the motorway, and I don't care.</p>
+        <ul class="pros"><li>Goes anywhere</li><li>Prices barely drop</li></ul>
+        <ul class="cons"><li>Two usable seats</li><li>Loud and thirsty at 120 km/h</li></ul>
+        <div class="links"><a href="https://en.wikipedia.org/wiki/Suzuki_Jimny" target="_blank" rel="noopener">Wikipedia</a></div>
+      </div>
+    </article>
+    <article class="card" style="--swatch:#8c5a3b">
+      <div class="pic"><img src="https://upload.wikimedia.org/wikipedia/commons/thumb/a/ab/Dacia_Duster_TCe_130_Extreme_%28III%29_%E2%80%93_f_13102024.jpg/500px-Dacia_Duster_TCe_130_Extreme_%28III%29_%E2%80%93_f_13102024.jpg" alt="Dacia Duster" loading="lazy" onerror="this.remove()"></div>
+      <div class="body">
+        <h3>Dacia Duster 4x4</h3>
+        <div class="price">€17–24k</div>
+        <p class="desc">Half the price of the obvious SUVs, with real four-wheel drive and a roof rack. The compromise that does family and weekend both.</p>
+        <ul class="pros"><li>Value, space, 4x4</li><li>Cheap parts</li></ul>
+        <ul class="cons"><li>Firm ride</li><li>Resale weaker than the Jimny</li></ul>
+        <div class="links"><a href="https://en.wikipedia.org/wiki/Dacia_Duster" target="_blank" rel="noopener">Wikipedia</a></div>
+      </div>
+    </article>
+  </div>
+</section>
+
+<script>
+  const filters = document.getElementById("filters");
+  filters.addEventListener("click", (event) => {
+    const button = event.target.closest("button");
+    if (!button) return;
+    for (const b of filters.children) b.setAttribute("aria-pressed", String(b === button));
+    const cat = button.dataset.cat;
+    for (const section of document.querySelectorAll("section")) section.hidden = cat !== "" && section.dataset.cat !== cat;
+  });
+</script>
+</body>
+</html>

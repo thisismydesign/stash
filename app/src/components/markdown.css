@@ -1,0 +1,42 @@
+.markdown {
+  overflow-wrap: anywhere;
+}
+
+.markdown .task-list-item {
+  list-style: none;
+  margin-left: -1.4em;
+}
+
+.markdown .task-list-item > input,
+.markdown .task-list-item > p:first-child > input {
+  width: 1.05em;
+  height: 1.05em;
+  margin: 0 0.55em 0 0;
+  vertical-align: -0.15em;
+  accent-color: var(--mantine-primary-color-filled);
+  cursor: pointer;
+}
+
+.markdown .task-list-item:has(> input:checked),
+.markdown .task-list-item:has(> p:first-child > input:checked) {
+  color: var(--mantine-color-dimmed);
+  text-decoration: line-through;
+}
+
+/* A decoration reaches every block below it; an inline-block stops it, so a ticked parent's steps keep their own state. */
+.markdown .task-list-item:has(> input:checked) > ul,
+.markdown .task-list-item:has(> p:first-child > input:checked) > ul {
+  display: inline-block;
+  width: 100%;
+  text-decoration: none;
+}
+
+.markdown p:last-child {
+  margin-bottom: 0;
+}
+
+/* Nested lists inherit the block margin and open a gap before the next item. Two classes outrank Mantine's rule. */
+.mantine-Typography-root.markdown li > ul,
+.mantine-Typography-root.markdown li > ol {
+  margin-bottom: 0;
+}

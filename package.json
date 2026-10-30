@@ -1,0 +1,52 @@
+{
+  "name": "stash",
+  "version": "0.0.0",
+  "private": true,
+  "license": "MIT",
+  "type": "module",
+  "description": "Stash — boards for notes, lists and ideas that your agent keeps, on Supabase and Cloudflare.",
+  "packageManager": "pnpm@11.8.0",
+  "engines": {
+    "node": ">=24"
+  },
+  "scripts": {
+    "dev": "vite app",
+    "build": "vite build app",
+    "preview": "vite preview app",
+    "db:reset": "supabase db reset && node supabase/seed/dev-account.ts",
+    "icons": "node app/icons.ts",
+    "deploy": "pnpm run build && cd app && wrangler deploy --var SUPABASE_URL:$(node --env-file-if-exists=../.env -p process.env.VITE_SUPABASE_URL)",
+    "supabase:deploy": "supabase db push && supabase functions deploy --use-api",
+    "lint": "eslint .",
+    "lint:fix": "eslint . --fix",
+    "typecheck": "tsc --noEmit && tsc --noEmit -p app && deno check supabase/functions/stash/index.ts",
+    "test": "node --test \"tests/**/*.test.ts\"",
+    "e2e": "playwright test"
+  },
+  "dependencies": {
+    "@mantine/core": "^9.5.0",
+    "@mantine/hooks": "^9.5.0",
+    "@supabase/supabase-js": "^2.117.3",
+    "@tabler/icons-react": "^3.49.0",
+    "react": "^19.2.8",
+    "react-dom": "^19.2.8",
+    "react-markdown": "^10.1.0",
+    "remark-gfm": "^4.0.1"
+  },
+  "devDependencies": {
+    "@eslint/js": "^10.0.1",
+    "@playwright/test": "^1.64.1",
+    "@types/node": "^22.10.0",
+    "@types/react": "^19.2.17",
+    "@types/react-dom": "^19.2.3",
+    "@vitejs/plugin-react": "^6.0.5",
+    "eslint": "^10.5.0",
+    "eslint-config-prettier": "^10.1.8",
+    "eslint-plugin-prettier": "^5.5.6",
+    "prettier": "^3.8.4",
+    "typescript": "^5.7.0",
+    "typescript-eslint": "^8.61.1",
+    "vite": "^8.2.0",
+    "wrangler": "^4.151.0"
+  }
+}
