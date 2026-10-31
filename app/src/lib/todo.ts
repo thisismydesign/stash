@@ -1,6 +1,6 @@
 import { DONE_HEADING } from "../../../shared/tables.ts";
 
-// Mirrors the conventions in supabase/functions/stash/agent.md.
+// Mirrors the conventions in supabase/functions/stash/agent.ts.
 
 const TASK = /^(\s*)([-*+]) \[([ xX])\] (.*)$/;
 const INDENTED = /^\s+\S/;

@@ -375,8 +375,6 @@ allow_dynamic_registration = false
 [functions.stash]
 # Public: agents read the docs and exchange keys before they have a session, and agent keys are not JWTs. It checks callers itself.
 verify_jwt = false
-# Deploys bundle only code; agent.md is read at runtime.
-static_files = ["./functions/stash/agent.md"]
 
 [edge_runtime]
 enabled = true
@@ -389,9 +387,10 @@ inspector_port = 8084
 # The Deno major version to use.
 deno_version = 2
 
-# Local only; the hosted project takes its secrets from `supabase secrets set`.
+# Local only; the production runtime gets the equivalents from its compose file (docs/deploy.md).
 [edge_runtime.secrets]
 STASH_SITE_URL = "http://localhost:5173"
+STASH_PUBLIC_URL = "http://127.0.0.1:55321"
 # Hosted runtimes list the project's keys as SUPABASE_*_KEYS, which the CLI will not pass locally; these stand in, with its fixed local keys.
 STASH_PUBLISHABLE_KEYS = '{"default":"sb_publishable_ACJWlzQHlZjBrEguHvfOxg_3BJgxAaH"}'
 STASH_SECRET_KEYS = '{"default":"sb_secret_N7UND0UgjKTVK-Uodkm0Hg_xSvEMPvz"}'

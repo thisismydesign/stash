@@ -27,7 +27,12 @@ export default defineConfig({
   projects: [
     {
       name: "chromium",
-      use: { browserName: "chromium", channel: process.env.CI ? "chrome" : undefined },
+      use: {
+        browserName: "chromium",
+        channel: process.env.CI ? "chrome" : undefined,
+        // From a machine on the tailnet the Supabase VM resolves to a tailnet address, which Chrome treats as local and asks permission for.
+        launchOptions: { args: ["--disable-features=LocalNetworkAccessChecks"] },
+      },
     },
   ],
 });

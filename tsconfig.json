@@ -27,6 +27,7 @@
     "e2e/**/*.ts",
     "playwright.config.ts",
     "supabase/seed/**/*.ts",
+    "supabase/deploy.ts",
     "app/icons.ts"
   ]
 }

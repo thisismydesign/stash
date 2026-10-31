@@ -7,7 +7,15 @@ import { CORS, json, text } from "../_shared/http.ts";
 import { HOUR_MS, throttled } from "../_shared/throttle.ts";
 import { agentInstructions, endpoints, openapi, type Endpoints } from "./docs.ts";
 
-const SITE = Deno.env.get("STASH_SITE_URL")!;
+// Self-hosted, the compose file hands the function Auth's site URL; the local CLI cannot pass that name and uses config.toml's.
+const SITE = Deno.env.get("STASH_SITE_URL") || Deno.env.get("SITE_URL");
+if (!SITE) throw new Error("Set STASH_SITE_URL or SITE_URL");
+// Self-hosted, SUPABASE_URL is the gateway's address inside its network; agents need the public one.
+const PUBLIC_URL = (
+  Deno.env.get("SUPABASE_PUBLIC_URL") ||
+  Deno.env.get("STASH_PUBLIC_URL") ||
+  SUPABASE_URL
+).replace(/\/$/, "");
 
 const clientIp = (request: Request) =>
   request.headers.get("cf-connecting-ip") ??
@@ -117,12 +125,11 @@ Deno.serve(async (request) => {
   const url = new URL(request.url);
   // Supabase mounts the function at /functions/v1/stash; routes are relative to it.
   const route = url.pathname.replace(/^\/stash/, "").replace(/\/$/, "") || "/";
-  // The gateway terminates TLS, so the runtime sees http; the public URL is https.
-  const functions = `https://${url.host}/functions/v1`;
+  const functions = `${PUBLIC_URL}/functions/v1`;
   const api: Endpoints = {
     functions,
     base: `${functions}/stash`,
-    supabase: SUPABASE_URL,
+    supabase: PUBLIC_URL,
     publishableKey: PUBLISHABLE_KEY,
     site: SITE,
   };

@@ -54,5 +54,8 @@ test("keeps boards to signed-in callers and lets browsers preflight", async ({ r
     },
   });
   expect(preflight.ok()).toBe(true);
-  expect(preflight.headers()["access-control-allow-origin"]).toBe("*");
+  // The function answers `*`; a self-hosted gateway answers preflights itself and echoes the origin.
+  expect(["*", "https://example.com"]).toContain(
+    preflight.headers()["access-control-allow-origin"],
+  );
 });

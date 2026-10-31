@@ -16,7 +16,7 @@
     "db:reset": "supabase db reset && node supabase/seed/dev-account.ts",
     "icons": "node app/icons.ts",
     "deploy": "pnpm run build && cd app && wrangler deploy --var SUPABASE_URL:$(node --env-file-if-exists=../.env -p process.env.VITE_SUPABASE_URL)",
-    "supabase:deploy": "supabase db push && supabase functions deploy --use-api",
+    "supabase:deploy": "node --env-file-if-exists=.env supabase/deploy.ts",
     "lint": "eslint .",
     "lint:fix": "eslint . --fix",
     "typecheck": "tsc --noEmit && tsc --noEmit -p app && deno check supabase/functions/stash/index.ts",

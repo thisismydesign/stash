@@ -5,7 +5,7 @@ Purpose: the stack and the principles every change MUST respect. Intent, not imp
 ## Stack
 
 - App: React + Mantine via Vite, static assets on Cloudflare Workers.
-- Backend: Supabase — Postgres, Auth (email + password, no emails sent), Edge Functions (Deno).
+- Backend: Supabase — Postgres, Auth (email + password, no emails sent), Edge Functions (Deno). Self-hosted in a VM; [supabase-vm](https://github.com/thisismydesign/supabase-vm) describes that setup, `docs/deploy.md` how Stash lands on it. The one deviation from that description: the VM has 3 GiB of memory, not 4.
 - Data: the owner's boards, written by them in the app or by their agent through the REST API.
 
 ## Model

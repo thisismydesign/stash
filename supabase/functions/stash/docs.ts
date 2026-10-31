@@ -1,3 +1,5 @@
+import template from "./agent.ts";
+
 export type Endpoints = {
   /** Where the project's functions live. */
   functions: string;
@@ -22,11 +24,10 @@ export const endpoints = (e: Endpoints) => ({
   site: e.site,
 });
 
-export async function agentInstructions(e: Endpoints) {
+export function agentInstructions(e: Endpoints) {
   const values: Record<string, string> = endpoints(e);
-  const template = await Deno.readTextFile(new URL("./agent.md", import.meta.url));
   return template.replace(/\{\{(\w+)\}\}/g, (_, key: string) => {
-    if (!(key in values)) throw new Error(`agent.md: unknown placeholder {{${key}}}`);
+    if (!(key in values)) throw new Error(`agent.ts: unknown placeholder {{${key}}}`);
     return values[key];
   });
 }
