@@ -7,23 +7,35 @@ export type Route =
   { page: "boards" } | { page: "board"; id: string } | { page: "shared"; token: string };
 
 const read = (): Route => {
-  const [first, id] = window.location.hash.replace(/^#\/?/, "").split("/");
+  const [first, id] = window.location.pathname.replace(/^\//, "").split("/");
   if (first === "b" && id) return { page: "board", id };
   if (first === "s" && id) return { page: "shared", token: id };
   return { page: "boards" };
 };
 
-export const go = {
-  home: () => (window.location.hash = "/"),
-  board: (id: string) => (window.location.hash = `/b/${id}`),
+/** Addresses were fragments once; a link kept from then still opens. Call before the first render. */
+export const adoptFragmentAddress = () => {
+  const path = window.location.hash.replace(/^#\/?/, "/");
+  if (/^\/[bs]\/./.test(path)) window.history.replaceState(null, "", path);
 };
 
-export function useHashRoute(): Route {
+const navigate = (path: string) => {
+  if (window.location.pathname === path) return;
+  window.history.pushState(null, "", path);
+  window.dispatchEvent(new PopStateEvent("popstate"));
+};
+
+export const go = {
+  home: () => navigate("/"),
+  board: (id: string) => navigate(`/b/${id}`),
+};
+
+export function useRoute(): Route {
   const [route, setRoute] = useState<Route>(read);
   useEffect(() => {
     const onChange = () => setRoute(read());
-    window.addEventListener("hashchange", onChange);
-    return () => window.removeEventListener("hashchange", onChange);
+    window.addEventListener("popstate", onChange);
+    return () => window.removeEventListener("popstate", onChange);
   }, []);
   return route;
 }

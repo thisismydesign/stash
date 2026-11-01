@@ -23,8 +23,6 @@ import { useState } from "react";
 import { shareLink, type Board } from "@shared/tables.ts";
 import { useBoards } from "./lib/boards.tsx";
 
-const site = () => `${window.location.origin}${import.meta.env.BASE_URL}`;
-
 function ShareModal({
   board,
   opened,
@@ -38,7 +36,7 @@ function ShareModal({
   // The switch shows the choice at once; the row follows.
   const [pending, setPending] = useState<boolean>();
   const [error, setError] = useState<string>();
-  const link = board.share_token && shareLink(site(), board.share_token);
+  const link = board.share_token && shareLink(window.location.origin, board.share_token);
   const toggle = async (on: boolean) => {
     setPending(on);
     setError(undefined);

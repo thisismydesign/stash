@@ -1,0 +1,16 @@
+# Search engines may fetch a shared board and find its noindex header; a
+# robots rule would hide the header and let a bare, token-bearing address be
+# indexed. Crawlers that gather training data read only this file.
+User-agent: anthropic-ai
+User-agent: Applebot-Extended
+User-agent: Bytespider
+User-agent: CCBot
+User-agent: ClaudeBot
+User-agent: Google-Extended
+User-agent: GPTBot
+User-agent: meta-externalagent
+User-agent: PerplexityBot
+Disallow: /s/
+
+User-agent: *
+Disallow:

@@ -11,7 +11,7 @@ import { createRoot } from "react-dom/client";
 import { BoardsProvider } from "./lib/boards.tsx";
 import { supabase, useSession, type SessionState } from "./lib/supabase.ts";
 import { cssVariablesResolver, theme } from "./theme.ts";
-import { Stash, go, useHashRoute, type Route } from "./App.tsx";
+import { Stash, adoptFragmentAddress, go, useRoute, type Route } from "./App.tsx";
 import { ExampleNotice, SignIn } from "./Auth.tsx";
 import { Footer } from "./Footer.tsx";
 import { StashBar } from "./Header.tsx";
@@ -40,7 +40,7 @@ function useHomeOnIdentityChange(session: SessionState, route: Route) {
 
 function Content() {
   const session = useSession();
-  const route = useHashRoute();
+  const route = useRoute();
   useHomeOnIdentityChange(session, route);
   if (!supabase) return <SignIn />;
   if (session === undefined)
@@ -80,6 +80,7 @@ function App() {
   );
 }
 
+adoptFragmentAddress();
 createRoot(document.getElementById("root")!).render(
   <StrictMode>
     <MantineProvider

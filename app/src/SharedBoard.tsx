@@ -11,20 +11,8 @@ import { tagColors } from "./theme.ts";
 
 type State = { board?: SharedBoard | null; error?: string };
 
-/** Tells search and AI crawlers that run scripts to leave a shared board alone; its address is a fragment, which no server sees, so only a site-wide header could. */
-function useNoIndex() {
-  useEffect(() => {
-    const meta = document.createElement("meta");
-    meta.name = "robots";
-    meta.content = "noindex, nofollow, noarchive, noai, noimageai";
-    document.head.append(meta);
-    return () => meta.remove();
-  }, []);
-}
-
 /** What a link's holder sees: the board, read-only, signed in or not. */
 export function SharedBoardPage({ token, onBack }: { token: string; onBack: () => void }) {
-  useNoIndex();
   const [state, setState] = useState<State>({});
   // Only the latest request's answer may land.
   const latest = useRef(0);

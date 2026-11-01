@@ -35,7 +35,7 @@ export type BoardInput = Partial<
 export type SharedBoard = Pick<Board, "id" | "title" | "kind" | "content" | "tags" | "updated_at">;
 
 /** The app's address for a shared board. */
-export const shareLink = (site: string, token: string) => `${site.replace(/\/$/, "")}/#/s/${token}`;
+export const shareLink = (site: string, token: string) => `${site.replace(/\/$/, "")}/s/${token}`;
 
 /** The heading a todo board's ticked items collect under. */
 export const DONE_HEADING = "## Done";

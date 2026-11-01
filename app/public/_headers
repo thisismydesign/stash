@@ -1,2 +1,6 @@
 /
   Link: </llms.txt>; rel="alternate"; type="text/markdown"; title="Stash for agents"
+
+# Shared boards are for the people given their link, not for indexes.
+/s/*
+  X-Robots-Tag: noindex, nofollow, noarchive, noai, noimageai

@@ -59,6 +59,18 @@ test("points agents from the site to its instructions", async ({ page, request }
     expect((await request.get("/")).headers().link).toContain("</llms.txt>");
 });
 
+test("serves the app at a shared address and keeps it out of indexes", async ({ request }) => {
+  // Cloudflare falls back to the app for navigations only.
+  const shared = await request.get("/s/not-a-token", { headers: { "Sec-Fetch-Mode": "navigate" } });
+  expect(shared.ok()).toBe(true);
+  expect(await shared.text()).toContain('<div id="root">');
+  const robots = await request.get("/robots.txt");
+  expect(robots.ok()).toBe(true);
+  expect(await robots.text()).toContain("Disallow: /s/");
+  // Only Cloudflare reads _headers.
+  if (process.env.E2E_BASE_URL) expect(shared.headers()["x-robots-tag"]).toContain("noindex");
+});
+
 test("keeps boards to signed-in callers and lets browsers preflight", async ({ request }) => {
   const headers = { apikey: PUBLISHABLE_KEY ?? "" };
   const list = await request.get(`${process.env.SUPABASE_URL}/rest/v1/boards?select=id`, {
