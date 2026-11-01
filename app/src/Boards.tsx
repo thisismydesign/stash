@@ -26,6 +26,7 @@ import {
   IconPin,
   IconPlus,
   IconSearch,
+  IconShare,
   IconSquare,
 } from "@tabler/icons-react";
 import { useMemo, useState } from "react";
@@ -116,6 +117,9 @@ function Tile({ board, color, onOpen, onError }: Omit<ListProps, "boards"> & { b
               {board.title}
             </Text>
             {board.pinned && <IconPin size={14} aria-label="Pinned" style={{ flexShrink: 0 }} />}
+            {board.share_token && (
+              <IconShare size={14} aria-label="Shared" style={{ flexShrink: 0 }} />
+            )}
           </Group>
           <Text size="sm" c="dimmed" lineClamp={p.open ? 1 : 3}>
             {p.text}
@@ -156,6 +160,7 @@ function Rows({ boards, color, onOpen, onError }: ListProps) {
                   {b.title}
                 </Text>
                 {b.pinned && <IconPin size={14} aria-label="Pinned" />}
+                {b.share_token && <IconShare size={14} aria-label="Shared" />}
               </Group>
             </Table.Td>
             <Table.Td visibleFrom="sm">

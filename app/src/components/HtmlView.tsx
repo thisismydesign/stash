@@ -1,4 +1,4 @@
-// The document is the owner's, yet it stays off the app's origin: no session, no storage, no parent.
+// The document is the owner's, or one they shared, yet it stays off the app's origin: no session, no storage, no parent.
 export function HtmlView({ html, title }: { html: string; title: string }) {
   return (
     <iframe

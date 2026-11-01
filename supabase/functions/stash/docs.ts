@@ -1,3 +1,4 @@
+import { shareLink } from "../../../shared/tables.ts";
 import template from "./agent.ts";
 
 export type Endpoints = {
@@ -22,6 +23,7 @@ export const endpoints = (e: Endpoints) => ({
   instructions: `${e.base}/agent`,
   publishableKey: e.publishableKey,
   site: e.site,
+  shareLink: shareLink(e.site, "<share_token>"),
 });
 
 export function agentInstructions(e: Endpoints) {

@@ -84,7 +84,7 @@ function fetchRestSpec(): Promise<RestSpec> {
 
 async function restOpenapi(api: Endpoints) {
   const spec = await fetchRestSpec();
-  const sessionPaths = new Set(["boards"]);
+  const sessionPaths = new Set(["boards", "rpc/share_board", "rpc/unshare_board"]);
   const pick = (o: Record<string, unknown> | undefined, strip: (k: string) => string) =>
     Object.fromEntries(Object.entries(o ?? {}).filter(([k]) => sessionPaths.has(strip(k))));
   const u = endpoints(api);
@@ -98,7 +98,8 @@ async function restOpenapi(api: Endpoints) {
     info: {
       title: "Stash data",
       version: "1",
-      description: "The user's own boards. Create with POST, change with PATCH ?id=eq.<id>.",
+      description:
+        "The user's own boards. Create with POST, change with PATCH ?id=eq.<id>; share and unshare through the rpc paths.",
     },
     securityDefinitions: {
       apikey: {

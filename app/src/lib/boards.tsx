@@ -10,6 +10,7 @@ import {
 import type { Board, BoardInput } from "@shared/tables.ts";
 import { demoBoard, demoBoards } from "./demo/index.ts";
 import { supabase, useSession } from "./supabase.ts";
+import { useReloadOnReturn } from "./useReloadOnReturn.ts";
 
 type Boards = {
   /** Undefined while loading. */
@@ -21,6 +22,9 @@ type Boards = {
   create: (input: BoardInput) => Promise<Board>;
   update: (id: string, input: BoardInput) => Promise<void>;
   remove: (id: string) => Promise<void>;
+  /** Gives the board a link anyone can read it by; the same link while it stays shared. */
+  share: (id: string) => Promise<void>;
+  unshare: (id: string) => Promise<void>;
 };
 
 const unavailable = () => Promise.reject(new Error("Not signed in."));
@@ -31,10 +35,14 @@ const BoardsContext = createContext<Boards>({
   create: unavailable,
   update: unavailable,
   remove: unavailable,
+  share: unavailable,
+  unshare: unavailable,
 });
 
 const byPinnedThenRecent = (a: Board, b: Board) =>
   Number(b.pinned) - Number(a.pinned) || b.updated_at.localeCompare(a.updated_at);
+
+type Result = { data: unknown; error: { message: string } | null };
 
 const fail = (error: { message: string } | null) => {
   if (error) throw new Error(error.message);
@@ -67,16 +75,7 @@ export function BoardsProvider({ children }: { children: ReactNode }) {
     if (owner) void reload();
   }, [local, owner, reload]);
 
-  // An agent may have edited boards while the tab sat in the background.
-  useEffect(() => {
-    const onReturn = () => !document.hidden && void reload();
-    document.addEventListener("visibilitychange", onReturn);
-    window.addEventListener("focus", onReturn);
-    return () => {
-      document.removeEventListener("visibilitychange", onReturn);
-      window.removeEventListener("focus", onReturn);
-    };
-  }, [reload]);
+  useReloadOnReturn(reload);
 
   const put = (board: Board) =>
     setBoards((list) =>
@@ -95,6 +94,21 @@ export function BoardsProvider({ children }: { children: ReactNode }) {
     return data as Board;
   };
 
+  // Requests to one board land in order, each waiting for the one before it; the last one's row is what shows.
+  const inTurn = async (id: string, request: () => PromiseLike<Result>) => {
+    const previous = pending.current.get(id) ?? Promise.resolve();
+    const turn = previous.catch(() => undefined).then(request);
+    pending.current.set(id, turn);
+    try {
+      const { data, error } = await turn;
+      fail(error);
+      if (!data) throw new Error("No such board.");
+      if (pending.current.get(id) === turn && current.current === owner) put(data as Board);
+    } finally {
+      if (pending.current.get(id) === turn) pending.current.delete(id);
+    }
+  };
+
   const update = async (id: string, input: BoardInput) => {
     if (local) {
       const updated_at = new Date().toISOString();
@@ -106,22 +120,13 @@ export function BoardsProvider({ children }: { children: ReactNode }) {
     }
     // Shown at once: a ticked box must not wait for the round trip.
     setBoards((list) => list?.map((b) => (b.id === id ? { ...b, ...input } : b)));
-    // Partial patches to one board must land in order, so each waits for the one before it.
-    const previous = pending.current.get(id) ?? Promise.resolve();
-    const turn = previous
-      .catch(() => undefined)
-      .then(() => supabase!.from("boards").update(input).eq("id", id).select().single());
-    pending.current.set(id, turn);
     try {
-      const { data, error } = await turn;
-      if (error) {
-        void reload();
-        throw new Error(error.message);
-      }
-      // A later patch is still showing optimistically; its own response brings the full row.
-      if (pending.current.get(id) === turn && current.current === owner) put(data as Board);
-    } finally {
-      if (pending.current.get(id) === turn) pending.current.delete(id);
+      await inTurn(id, () =>
+        supabase!.from("boards").update(input).eq("id", id).select().maybeSingle(),
+      );
+    } catch (e) {
+      void reload();
+      throw e;
     }
   };
 
@@ -133,8 +138,13 @@ export function BoardsProvider({ children }: { children: ReactNode }) {
     setBoards((list) => list?.filter((b) => b.id !== id));
   };
 
+  const setSharing = (fn: "share_board" | "unshare_board") => (id: string) =>
+    local ? unavailable() : inTurn(id, () => supabase!.rpc(fn, { board_id: id }).maybeSingle());
+  const share = setSharing("share_board");
+  const unshare = setSharing("unshare_board");
+
   return (
-    <BoardsContext value={{ boards, local, error, reload, create, update, remove }}>
+    <BoardsContext value={{ boards, local, error, reload, create, update, remove, share, unshare }}>
       {children}
     </BoardsContext>
   );

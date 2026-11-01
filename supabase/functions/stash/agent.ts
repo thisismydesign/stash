@@ -5,7 +5,7 @@ Stash ({{site}}) is the user's personal notepad: boards of notes, lists and idea
 
 ## Boards
 
-A board is one row in \`boards\`: \`title\`, \`kind\`, \`content\`, \`tags\`, \`pinned\`, \`archived_at\`.
+A board is one row in \`boards\`: \`title\`, \`kind\`, \`content\`, \`tags\`, \`pinned\`, \`archived_at\`, \`share_token\`.
 
 - \`content\` is the whole board as text. Read it, change it, write it back whole.
 - \`kind\` is one of:
@@ -14,6 +14,7 @@ A board is one row in \`boards\`: \`title\`, \`kind\`, \`content\`, \`tags\`, \`
   - \`html\` — a complete document, rendered in a sandboxed iframe (scripts run, no access to the app). Inline styles and scripts, absolute URLs for images.
 - \`tags\` is a list of short lower-case labels (for example \`travel\`, \`home\`, \`cars\`); the app colours and filters by them. Reuse what exists before inventing new ones: list the boards first.
 - \`pinned\` boards sort first. \`archived_at\` hides a board from the main list; never delete a board the user did not ask to delete.
+- \`share_token\` is set while the board is shared: anyone with the link \`{{shareLink}}\` can read it. Only the sharing functions below change it. Share a board only when the user asks.
 
 ## Writing for the user
 
@@ -36,6 +37,8 @@ Boards are read and written through the Supabase REST API at {{rest}}, described
 - Create: \`POST {{rest}}/boards\` with JSON \`{"title","kind","content","tags"}\` and header \`Prefer: return=representation\`
 - Change: \`PATCH {{rest}}/boards?id=eq.<id>\` with the fields that change
 - Delete: \`DELETE {{rest}}/boards?id=eq.<id>\`
+- Share: \`POST {{rest}}/rpc/share_board\` with JSON \`{"board_id"}\`; returns \`[board]\` with \`share_token\` filled in. Give the user the link \`{{shareLink}}\`.
+- Stop sharing: \`POST {{rest}}/rpc/unshare_board\` with JSON \`{"board_id"}\`; the link stops working.
 
 Sessions and this document are described at {{openapi}}.
 `;

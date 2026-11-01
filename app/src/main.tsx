@@ -11,7 +11,7 @@ import { createRoot } from "react-dom/client";
 import { BoardsProvider } from "./lib/boards.tsx";
 import { supabase, useSession, type SessionState } from "./lib/supabase.ts";
 import { cssVariablesResolver, theme } from "./theme.ts";
-import { Stash, go, useHashRoute } from "./App.tsx";
+import { Stash, go, useHashRoute, type Route } from "./App.tsx";
 import { ExampleNotice, SignIn } from "./Auth.tsx";
 import { Footer } from "./Footer.tsx";
 import { StashBar } from "./Header.tsx";
@@ -27,21 +27,21 @@ function useThemeColorMeta() {
   }, [scheme]);
 }
 
-/** A board open at sign-in or sign-out belongs to the screen before. */
-function useHomeOnIdentityChange(session: SessionState) {
+/** A board open at sign-in or sign-out belongs to the screen before; a shared one reads the same to anyone. */
+function useHomeOnIdentityChange(session: SessionState, route: Route) {
   const known = useRef<string | null | undefined>(undefined);
   useEffect(() => {
     if (session === undefined) return;
     const id = session?.user.id ?? null;
-    if (known.current !== undefined && known.current !== id) go.home();
+    if (known.current !== undefined && known.current !== id && route.page !== "shared") go.home();
     known.current = id;
-  }, [session]);
+  }, [session, route.page]);
 }
 
 function Content() {
   const session = useSession();
   const route = useHashRoute();
-  useHomeOnIdentityChange(session);
+  useHomeOnIdentityChange(session, route);
   if (!supabase) return <SignIn />;
   if (session === undefined)
     return (
@@ -51,7 +51,7 @@ function Content() {
     );
   return (
     <>
-      {session === null && <ExampleNotice />}
+      {session === null && route.page !== "shared" && <ExampleNotice />}
       <Stash route={route} />
     </>
   );

@@ -12,9 +12,9 @@ import {
   TextInput,
   Title,
 } from "@mantine/core";
-import { IconArrowLeft, IconPencil } from "@tabler/icons-react";
+import { IconArrowLeft, IconPencil, IconShare } from "@tabler/icons-react";
 import { useEffect, useRef, useState } from "react";
-import type { Board, BoardKind } from "@shared/tables.ts";
+import type { Board, BoardKind, SharedBoard } from "@shared/tables.ts";
 import { BoardMenu } from "./BoardMenu.tsx";
 import { KindIcon, TagBadges, cleanTags, unique } from "./Boards.tsx";
 import { HtmlView } from "./components/HtmlView.tsx";
@@ -31,6 +31,32 @@ const PLACEHOLDER: Record<BoardKind, string> = {
   markdown: "# Notes\n\nAnything, in Markdown.",
   html: "<!doctype html>\n<html>\n  <body>\n    Your page.\n  </body>\n</html>",
 };
+
+export function KindBadge({ kind }: { kind: BoardKind }) {
+  return (
+    <Badge
+      variant="light"
+      color={KIND_COLOR[kind]}
+      size="sm"
+      leftSection={<KindIcon kind={kind} size={12} />}
+    >
+      {KIND_LABEL[kind]}
+    </Badge>
+  );
+}
+
+/** The board as read; with `onToggle`, a todo's boxes are live. */
+export function BoardContent({
+  board,
+  onToggle,
+}: {
+  board: SharedBoard;
+  onToggle?: (line: number) => void;
+}) {
+  if (board.kind === "html") return <HtmlView html={board.content} title={board.title} />;
+  if (board.content.trim() === "") return <Text c="dimmed">Nothing here yet.</Text>;
+  return <Markdown onToggle={onToggle}>{board.content}</Markdown>;
+}
 
 const draftOf = (board: Board): Draft => ({
   title: board.title,
@@ -190,18 +216,16 @@ export function BoardPage({ id, onBack }: { id: string; onBack: () => void }) {
 
       {!draft && (
         <Group gap={6}>
-          <Badge
-            variant="light"
-            color={KIND_COLOR[board.kind]}
-            size="sm"
-            leftSection={<KindIcon kind={board.kind} size={12} />}
-          >
-            {KIND_LABEL[board.kind]}
-          </Badge>
+          <KindBadge kind={board.kind} />
           <TagBadges tags={board.tags} color={color} />
           {board.archived_at && (
             <Badge variant="outline" color="gray" size="sm">
               Archived
+            </Badge>
+          )}
+          {board.share_token && (
+            <Badge variant="outline" color="gray" size="sm" leftSection={<IconShare size={10} />}>
+              Shared
             </Badge>
           )}
           <Text size="xs" c="dimmed" ml="auto">
@@ -217,12 +241,8 @@ export function BoardPage({ id, onBack }: { id: string; onBack: () => void }) {
 
       {draft ? (
         <Editor draft={draft} kind={board.kind} tags={tags} onChange={setDraft} />
-      ) : board.kind === "html" ? (
-        <HtmlView html={board.content} title={board.title} />
-      ) : board.content.trim() === "" ? (
-        <Text c="dimmed">Nothing here yet.</Text>
       ) : (
-        <Markdown onToggle={toggle}>{board.content}</Markdown>
+        <BoardContent board={board} onToggle={toggle} />
       )}
     </Stack>
   );

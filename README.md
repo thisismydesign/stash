@@ -46,6 +46,10 @@ A page of your own, rendered in a sandbox: mood boards, comparisons, anything wi
   <img src="docs/screenshots/html.png" alt="An HTML board" width="300">
 </p>
 
+### Sharing
+
+A board's menu shares it: a link that shows the board, read-only, to anyone who has it. Turn sharing off and the link stops working.
+
 ## Agents
 
 An agent reads and writes every board through the REST API with an agent key you make under *Agent keys*. The instructions it needs are served at `/llms.txt`.

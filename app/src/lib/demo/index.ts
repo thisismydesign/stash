@@ -21,6 +21,7 @@ export const demoBoard = (input: BoardInput, at = Date.now(), id: string = newId
   tags: input.tags ?? [],
   pinned: input.pinned ?? false,
   archived_at: input.archived_at ?? null,
+  share_token: null,
   created_at: new Date(at).toISOString(),
   updated_at: new Date(at).toISOString(),
 });

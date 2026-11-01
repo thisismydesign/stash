@@ -20,6 +20,8 @@ export interface Board {
   tags: string[];
   pinned: boolean;
   archived_at: string | null;
+  /** Set by `share_board`, cleared by `unshare_board`; anyone with it may read the board. */
+  share_token: string | null;
   created_at: string;
   updated_at: string;
 }
@@ -28,6 +30,12 @@ export interface Board {
 export type BoardInput = Partial<
   Pick<Board, "title" | "kind" | "content" | "tags" | "pinned" | "archived_at">
 >;
+
+/** What `shared_board(token)` returns: the board as its readers see it. */
+export type SharedBoard = Pick<Board, "id" | "title" | "kind" | "content" | "tags" | "updated_at">;
+
+/** The app's address for a shared board. */
+export const shareLink = (site: string, token: string) => `${site.replace(/\/$/, "")}/#/s/${token}`;
 
 /** The heading a todo board's ticked items collect under. */
 export const DONE_HEADING = "## Done";

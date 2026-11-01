@@ -36,7 +36,11 @@ test("serves the agent instructions and the API descriptions", async ({ request 
   expect((await openapi.json()).paths["/token"]).toBeTruthy();
   const rest = await request.get(`${API}/rest-openapi.json`, { headers });
   expect(rest.ok()).toBe(true);
-  expect(Object.keys((await rest.json()).paths)).toEqual(["/boards"]);
+  expect(Object.keys((await rest.json()).paths).sort()).toEqual([
+    "/boards",
+    "/rpc/share_board",
+    "/rpc/unshare_board",
+  ]);
   expect((await request.get(`${API}/nothing`, { headers })).status()).toBe(404);
 });
 
@@ -60,8 +64,19 @@ test("keeps boards to signed-in callers and lets browsers preflight", async ({ r
   const list = await request.get(`${process.env.SUPABASE_URL}/rest/v1/boards?select=id`, {
     headers,
   });
-  // The anonymous role has no grant on the table.
+  // The anonymous role has no grant on the table, and may only read a shared board by its token.
   expect(list.ok()).toBe(false);
+  const share = await request.post(`${process.env.SUPABASE_URL}/rest/v1/rpc/share_board`, {
+    headers,
+    data: { board_id: "00000000-0000-0000-0000-000000000000" },
+  });
+  expect(share.ok()).toBe(false);
+  const shared = await request.get(
+    `${process.env.SUPABASE_URL}/rest/v1/rpc/shared_board?token=not-a-token`,
+    { headers },
+  );
+  expect(shared.ok()).toBe(true);
+  expect(await shared.json()).toEqual([]);
   const preflight = await request.fetch(`${API}/token`, {
     method: "OPTIONS",
     headers: {

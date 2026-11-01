@@ -153,6 +153,45 @@ test("makes a board, writes it, and deletes it", async ({ page }) => {
   await expect(page.getByRole("button", { name: /^e2e Renamed/ })).toBeHidden();
 });
 
+test("shares a board by link until sharing is turned off", async ({ page, request, browser }) => {
+  const session = await signIn(page);
+  await seed(request, session, {
+    title: "e2e Shared",
+    kind: "markdown",
+    content: "# Plan\n\nMeet at noon.",
+    tags: ["e2e-team"],
+  });
+  await open(page, "e2e Shared");
+  await page.getByRole("button", { name: "Actions for e2e Shared" }).click();
+  await page.getByRole("menuitem", { name: "Share…" }).click();
+  const dialog = page.getByRole("dialog");
+  const sharing = dialog.getByLabel("Anyone with the link can view");
+  await sharing.click();
+  await expect(dialog.getByRole("textbox", { name: "Link" })).toBeVisible();
+  const link = await dialog.getByRole("textbox", { name: "Link" }).inputValue();
+  expect(link).toMatch(/#\/s\/[0-9a-f]{32}$/);
+  await page.keyboard.press("Escape");
+  await expect(page.getByText("Shared", { exact: true })).toBeVisible();
+
+  // The link's holder is signed out and sees the board, nothing else of the account's.
+  const reader = await browser.newContext();
+  const guest = await reader.newPage();
+  await guest.goto(link);
+  await expect(guest.getByRole("heading", { name: "e2e Shared" })).toBeVisible();
+  await expect(guest.getByText("Meet at noon.")).toBeVisible();
+  await expect(guest.getByText("e2e-team")).toBeVisible();
+  await expect(guest.getByText("You are looking at example boards.")).toBeHidden();
+  await expect(guest.getByRole("button", { name: "Edit" })).toBeHidden();
+
+  await page.getByRole("button", { name: "Actions for e2e Shared" }).click();
+  await page.getByRole("menuitem", { name: "Sharing…" }).click();
+  await sharing.click();
+  await expect(dialog.getByRole("textbox", { name: "Link" })).toBeHidden();
+  await guest.reload();
+  await expect(guest.getByText("This link no longer works")).toBeVisible();
+  await reader.close();
+});
+
 test("renders an HTML board in a sandbox", async ({ page, request }) => {
   const session = await signIn(page);
   await seed(request, session, {

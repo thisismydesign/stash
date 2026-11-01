@@ -1,12 +1,16 @@
 import { useEffect, useState } from "react";
 import { BoardPage } from "./Board.tsx";
 import { BoardsPage } from "./Boards.tsx";
+import { SharedBoardPage } from "./SharedBoard.tsx";
 
-export type Route = { page: "boards" } | { page: "board"; id: string };
+export type Route =
+  { page: "boards" } | { page: "board"; id: string } | { page: "shared"; token: string };
 
 const read = (): Route => {
   const [first, id] = window.location.hash.replace(/^#\/?/, "").split("/");
-  return first === "b" && id ? { page: "board", id } : { page: "boards" };
+  if (first === "b" && id) return { page: "board", id };
+  if (first === "s" && id) return { page: "shared", token: id };
+  return { page: "boards" };
 };
 
 export const go = {
@@ -26,5 +30,6 @@ export function useHashRoute(): Route {
 
 export function Stash({ route }: { route: Route }) {
   if (route.page === "board") return <BoardPage id={route.id} onBack={go.home} />;
+  if (route.page === "shared") return <SharedBoardPage token={route.token} onBack={go.home} />;
   return <BoardsPage onOpen={go.board} />;
 }

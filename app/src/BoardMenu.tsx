@@ -1,17 +1,99 @@
-import { ActionIcon, Button, Group, Menu, Modal, Stack, Text } from "@mantine/core";
+import {
+  ActionIcon,
+  Button,
+  CopyButton,
+  Group,
+  Menu,
+  Modal,
+  Stack,
+  Switch,
+  Text,
+  TextInput,
+} from "@mantine/core";
 import {
   IconArchive,
   IconArchiveOff,
   IconDots,
   IconPin,
   IconPinnedOff,
+  IconShare,
   IconTrash,
 } from "@tabler/icons-react";
 import { useState } from "react";
-import type { Board } from "@shared/tables.ts";
+import { shareLink, type Board } from "@shared/tables.ts";
 import { useBoards } from "./lib/boards.tsx";
 
-/** Pin, archive and delete, the same from a tile, a row or the board itself. */
+const site = () => `${window.location.origin}${import.meta.env.BASE_URL}`;
+
+function ShareModal({
+  board,
+  opened,
+  onClose,
+}: {
+  board: Board;
+  opened: boolean;
+  onClose: () => void;
+}) {
+  const { share, unshare } = useBoards();
+  // The switch shows the choice at once; the row follows.
+  const [pending, setPending] = useState<boolean>();
+  const [error, setError] = useState<string>();
+  const link = board.share_token && shareLink(site(), board.share_token);
+  const toggle = async (on: boolean) => {
+    setPending(on);
+    setError(undefined);
+    try {
+      await (on ? share : unshare)(board.id);
+    } catch (e) {
+      setError((e as Error).message);
+    } finally {
+      setPending(undefined);
+    }
+  };
+  return (
+    <Modal opened={opened} onClose={onClose} title={`Share “${board.title}”`} size="sm">
+      <Stack gap="sm">
+        <Switch
+          label="Anyone with the link can view"
+          checked={pending ?? !!link}
+          disabled={pending !== undefined}
+          onChange={(e) => void toggle(e.currentTarget.checked)}
+        />
+        {link && (
+          <Group gap="xs" wrap="nowrap">
+            <TextInput
+              aria-label="Link"
+              size="sm"
+              readOnly
+              value={link}
+              onFocus={(e) => e.currentTarget.select()}
+              style={{ flex: 1 }}
+            />
+            <CopyButton value={link}>
+              {({ copied, copy }) => (
+                <Button size="sm" variant="light" onClick={copy}>
+                  {copied ? "Copied" : "Copy"}
+                </Button>
+              )}
+            </CopyButton>
+          </Group>
+        )}
+        {error && (
+          <Text size="sm" c="red">
+            {error}
+          </Text>
+        )}
+        <Text size="xs" c="dimmed">
+          {link
+            ? "Readers see the board as it is now and as it changes. Turn sharing off and the link stops working."
+            : "Sharing makes a link that shows this board, read-only, to anyone who has it."}
+        </Text>
+      </Stack>
+    </Modal>
+  );
+}
+
+/** Pin, archive, share and delete, the same from a tile, a row or the board itself. */
 export function BoardMenu({
   board,
   size = "sm",
@@ -23,8 +105,9 @@ export function BoardMenu({
   onError?: (message: string) => void;
   onDeleted?: () => void;
 }) {
-  const { update, remove } = useBoards();
+  const { local, update, remove } = useBoards();
   const [confirm, setConfirm] = useState(false);
+  const [sharing, setSharing] = useState(false);
   const [busy, setBusy] = useState(false);
   const run = async (fn: () => Promise<void>) => {
     setBusy(true);
@@ -70,6 +153,11 @@ export function BoardMenu({
           >
             {board.archived_at ? "Restore" : "Archive"}
           </Menu.Item>
+          {!local && (
+            <Menu.Item leftSection={<IconShare size={16} />} onClick={() => setSharing(true)}>
+              {board.share_token ? "Sharing…" : "Share…"}
+            </Menu.Item>
+          )}
           <Menu.Divider />
           <Menu.Item
             color="red"
@@ -80,6 +168,7 @@ export function BoardMenu({
           </Menu.Item>
         </Menu.Dropdown>
       </Menu>
+      {!local && <ShareModal board={board} opened={sharing} onClose={() => setSharing(false)} />}
       <Modal
         opened={confirm}
         onClose={() => setConfirm(false)}
