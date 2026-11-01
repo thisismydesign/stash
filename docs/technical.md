@@ -12,6 +12,7 @@ Purpose: the stack and the principles every change MUST respect. Intent, not imp
 
 - A board is one row: `title`, `kind`, `content`, `tags`, `pinned`, `archived_at`.
 - `content` is the whole board as text: Markdown for `todo` and `markdown`, a document for `html`. One text column keeps every kind readable and writable by an agent with a single request.
+- A visitor who is not signed in sees the example boards from `app/src/lib/demo`, kept in memory; the dev account starts with the same ones.
 - `kind` chooses the renderer. `todo` renders task items as live checkboxes; ticking one moves it under a `## Done` heading, unticking brings it back. The rules live in `app/src/lib/todo.ts` and the agent instructions, and MUST agree.
 
 ## Principles

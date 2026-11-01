@@ -1,5 +1,7 @@
 import {
   ActionIcon,
+  Alert,
+  Anchor,
   Button,
   Center,
   Menu,
@@ -20,6 +22,9 @@ import { signInAsDevAccount, supabase, useSession } from "./lib/supabase.ts";
 
 /** No reset by email, so a new one must be worth keeping. */
 const MIN_PASSWORD_LENGTH = 8;
+
+/** Asks the header's Sign in button to open. */
+const OPEN_SIGN_IN = "stash:sign-in";
 
 function PasswordForm() {
   const [email, setEmail] = useState("");
@@ -82,24 +87,62 @@ function PasswordForm() {
   );
 }
 
+/** Without a project to connect to, the only page. */
 export function SignIn() {
   return (
     <Center style={{ flex: 1 }}>
       <Paper withBorder p="lg" w="100%" maw={360}>
-        <Stack gap="md">
-          <Stack gap={4} align="center">
-            <Logo size={40} />
-            <Title order={3}>Sign in to Stash</Title>
-            <Text size="sm" c="dimmed" ta="center">
-              {supabase
-                ? "Your boards, kept by you and your agent."
-                : "Set VITE_SUPABASE_URL and VITE_SUPABASE_KEY to connect a project."}
-            </Text>
-          </Stack>
-          {supabase && <PasswordForm />}
+        <Stack gap={4} align="center">
+          <Logo size={40} />
+          <Title order={3}>Sign in to Stash</Title>
+          <Text size="sm" c="dimmed" ta="center">
+            Set VITE_SUPABASE_URL and VITE_SUPABASE_KEY to connect a project.
+          </Text>
         </Stack>
       </Paper>
     </Center>
+  );
+}
+
+/** What a visitor sees above the example boards. */
+export function ExampleNotice() {
+  return (
+    <Alert variant="light" py="xs" mb="md">
+      <Text size="sm" ta="center">
+        You are looking at example boards.{" "}
+        <Anchor
+          component="button"
+          size="sm"
+          onClick={() => window.dispatchEvent(new Event(OPEN_SIGN_IN))}
+        >
+          Sign in to keep your own.
+        </Anchor>
+      </Text>
+    </Alert>
+  );
+}
+
+function SignInButton() {
+  const [opened, setOpened] = useState(false);
+  useEffect(() => {
+    const open = () => setOpened(true);
+    window.addEventListener(OPEN_SIGN_IN, open);
+    return () => window.removeEventListener(OPEN_SIGN_IN, open);
+  }, []);
+  return (
+    <>
+      <Button variant="default" size="xs" onClick={() => setOpened(true)}>
+        Sign in
+      </Button>
+      <Modal
+        opened={opened}
+        onClose={() => setOpened(false)}
+        title={<Text fw={700}>Sign in to Stash</Text>}
+        size="xs"
+      >
+        <PasswordForm />
+      </Modal>
+    </>
   );
 }
 
@@ -182,7 +225,8 @@ function SettingsModal({ tab, onClose }: { tab: SettingsTab | null; onClose: () 
 export function ProfileMenu() {
   const session = useSession();
   const [settings, setSettings] = useState<SettingsTab | null>(null);
-  if (!session) return null;
+  if (session === undefined) return null;
+  if (session === null) return supabase ? <SignInButton /> : null;
   return (
     <>
       <Menu position="bottom-end" shadow="md" width={220}>

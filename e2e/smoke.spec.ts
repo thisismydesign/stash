@@ -3,10 +3,27 @@ import { API, PUBLISHABLE_KEY, resetThrottle } from "./session.ts";
 
 test.beforeAll(resetThrottle);
 
-test("asks a visitor to sign in", async ({ page }) => {
+test("shows a visitor the example boards and offers to sign in", async ({ page }) => {
   await page.goto("/");
-  await expect(page.getByRole("heading", { name: "Sign in to Stash" })).toBeVisible();
-  await expect(page.getByRole("button", { name: "Sign in" })).toBeVisible();
+  await expect(page.getByText("You are looking at example boards.")).toBeVisible();
+  await expect(page.getByRole("button", { name: /^Asia trip/ })).toBeVisible();
+  // Tried in memory: the tick shows, nothing is sent.
+  const sent: string[] = [];
+  await page.route("**/rest/v1/boards**", (route) => {
+    sent.push(route.request().url());
+    return route.abort();
+  });
+  await page.getByRole("button", { name: /^To-do/ }).click();
+  await expect(page.getByRole("heading", { name: "To-do" })).toBeVisible();
+  const ticked = page.getByRole("checkbox", { checked: true });
+  await expect(ticked).toHaveCount(2);
+  await page.getByRole("checkbox").first().click();
+  await expect(ticked).toHaveCount(3);
+  expect(sent).toEqual([]);
+  await page.getByRole("button", { name: "Sign in to keep your own." }).click();
+  const dialog = page.getByRole("dialog");
+  await expect(dialog.getByRole("heading", { name: "Sign in to Stash" })).toBeVisible();
+  await expect(dialog.getByRole("button", { name: "Sign in" })).toBeVisible();
 });
 
 test("serves the agent instructions and the API descriptions", async ({ request }) => {

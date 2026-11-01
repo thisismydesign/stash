@@ -283,7 +283,7 @@ const matches = (board: Board, query: string) => {
 };
 
 export function BoardsPage({ onOpen }: { onOpen: (id: string) => void }) {
-  const { boards, error } = useBoards();
+  const { boards, local, error } = useBoards();
   const [view, setView] = useLocalState<"tiles" | "list">("boards:view", "tiles");
   const [tags, setTags] = useState<string[]>([]);
   const [query, setQuery] = useState("");
@@ -401,9 +401,11 @@ export function BoardsPage({ onOpen }: { onOpen: (id: string) => void }) {
       )}
       {visible.length === 0 ? (
         <Text c="dimmed" py="xl" ta="center">
-          {boards.length === 0
-            ? "No boards yet. Make one, or ask your agent to."
-            : "No board matches."}
+          {boards.length > 0
+            ? "No board matches."
+            : local
+              ? "No boards left. Make one, or sign in for your own."
+              : "No boards yet. Make one, or ask your agent to."}
         </Text>
       ) : (
         sections.map((s) => (

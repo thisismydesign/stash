@@ -1,7 +1,8 @@
 // Gives the account `pnpm run dev` signs in as the example boards; replaces it if it exists. `pnpm run db:reset` runs it after the reset.
 
+import { readFileSync } from "node:fs";
 import { createClient } from "@supabase/supabase-js";
-import { exampleBoards } from "./boards.ts";
+import { exampleBoards } from "../../app/src/lib/demo/boards.ts";
 
 process.loadEnvFile(new URL("../../.env.development", import.meta.url));
 const { SUPABASE_URL, SUPABASE_SECRET_KEY, STASH_DEV_EMAIL } = process.env;
@@ -24,7 +25,9 @@ const created = await db.auth.admin.createUser({ email: STASH_DEV_EMAIL, email_c
 if (created.error) throw created.error;
 const owner = created.data.user.id;
 
+const demo = new URL("../../app/src/lib/demo/", import.meta.url);
+const file = (name: string) => readFileSync(new URL(name, demo), "utf8");
 // One at a time, last first, so updated_at puts them in the order listed.
-for (const board of exampleBoards().reverse())
+for (const board of exampleBoards(file).reverse())
   check(await db.from("boards").insert({ ...board, owner }));
 console.log(`Seeded ${STASH_DEV_EMAIL}`);

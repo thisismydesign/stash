@@ -6,13 +6,13 @@ import {
   MantineProvider,
   useComputedColorScheme,
 } from "@mantine/core";
-import { StrictMode, useEffect } from "react";
+import { StrictMode, useEffect, useRef } from "react";
 import { createRoot } from "react-dom/client";
 import { BoardsProvider } from "./lib/boards.tsx";
-import { supabase, useSession } from "./lib/supabase.ts";
+import { supabase, useSession, type SessionState } from "./lib/supabase.ts";
 import { cssVariablesResolver, theme } from "./theme.ts";
-import { Stash, useHashRoute } from "./App.tsx";
-import { SignIn } from "./Auth.tsx";
+import { Stash, go, useHashRoute } from "./App.tsx";
+import { ExampleNotice, SignIn } from "./Auth.tsx";
 import { Footer } from "./Footer.tsx";
 import { StashBar } from "./Header.tsx";
 
@@ -27,9 +27,21 @@ function useThemeColorMeta() {
   }, [scheme]);
 }
 
+/** A board open at sign-in or sign-out belongs to the screen before. */
+function useHomeOnIdentityChange(session: SessionState) {
+  const known = useRef<string | null | undefined>(undefined);
+  useEffect(() => {
+    if (session === undefined) return;
+    const id = session?.user.id ?? null;
+    if (known.current !== undefined && known.current !== id) go.home();
+    known.current = id;
+  }, [session]);
+}
+
 function Content() {
   const session = useSession();
   const route = useHashRoute();
+  useHomeOnIdentityChange(session);
   if (!supabase) return <SignIn />;
   if (session === undefined)
     return (
@@ -37,8 +49,12 @@ function Content() {
         <Loader size="sm" />
       </Center>
     );
-  if (session === null) return <SignIn />;
-  return <Stash route={route} />;
+  return (
+    <>
+      {session === null && <ExampleNotice />}
+      <Stash route={route} />
+    </>
+  );
 }
 
 function App() {

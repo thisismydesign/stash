@@ -8,11 +8,14 @@ import {
   type ReactNode,
 } from "react";
 import type { Board, BoardInput } from "@shared/tables.ts";
+import { demoBoard, demoBoards } from "./demo/index.ts";
 import { supabase, useSession } from "./supabase.ts";
 
 type Boards = {
   /** Undefined while loading. */
   boards: Board[] | undefined;
+  /** Signed out: the example boards, kept in memory. */
+  local: boolean;
   error?: string;
   reload: () => Promise<void>;
   create: (input: BoardInput) => Promise<Board>;
@@ -23,6 +26,7 @@ type Boards = {
 const unavailable = () => Promise.reject(new Error("Not signed in."));
 const BoardsContext = createContext<Boards>({
   boards: undefined,
+  local: false,
   reload: () => Promise.resolve(),
   create: unavailable,
   update: unavailable,
@@ -39,25 +43,29 @@ const fail = (error: { message: string } | null) => {
 export function BoardsProvider({ children }: { children: ReactNode }) {
   const session = useSession();
   const owner = session?.user.id;
+  // Signed out: the example boards, kept in memory, so a visitor sees and tries the real thing.
+  const local = session === null;
   const [boards, setBoards] = useState<Board[]>();
   const [error, setError] = useState<string>();
   const pending = useRef(new Map<string, Promise<unknown>>());
+  // A response from before a sign-out must not land on the next screen.
+  const current = useRef(owner);
+  current.current = owner;
 
   const reload = useCallback(async () => {
     if (!owner || !supabase) return;
     const { data, error } = await supabase.from("boards").select("*");
+    if (current.current !== owner) return;
     if (error) return setError(error.message);
     setError(undefined);
     setBoards((data as Board[]).sort(byPinnedThenRecent));
   }, [owner]);
 
   useEffect(() => {
-    if (!owner) {
-      setBoards(undefined);
-      return;
-    }
-    void reload();
-  }, [owner, reload]);
+    if (local) return setBoards(demoBoards());
+    setBoards(undefined);
+    if (owner) void reload();
+  }, [local, owner, reload]);
 
   // An agent may have edited boards while the tab sat in the background.
   useEffect(() => {
@@ -76,6 +84,11 @@ export function BoardsProvider({ children }: { children: ReactNode }) {
     );
 
   const create = async (input: BoardInput) => {
+    if (local) {
+      const board = demoBoard(input);
+      put(board);
+      return board;
+    }
     const { data, error } = await supabase!.from("boards").insert(input).select().single();
     fail(error);
     put(data as Board);
@@ -83,6 +96,14 @@ export function BoardsProvider({ children }: { children: ReactNode }) {
   };
 
   const update = async (id: string, input: BoardInput) => {
+    if (local) {
+      const updated_at = new Date().toISOString();
+      return setBoards((list) =>
+        list
+          ?.map((b) => (b.id === id ? { ...b, ...input, updated_at } : b))
+          .sort(byPinnedThenRecent),
+      );
+    }
     // Shown at once: a ticked box must not wait for the round trip.
     setBoards((list) => list?.map((b) => (b.id === id ? { ...b, ...input } : b)));
     // Partial patches to one board must land in order, so each waits for the one before it.
@@ -98,20 +119,22 @@ export function BoardsProvider({ children }: { children: ReactNode }) {
         throw new Error(error.message);
       }
       // A later patch is still showing optimistically; its own response brings the full row.
-      if (pending.current.get(id) === turn) put(data as Board);
+      if (pending.current.get(id) === turn && current.current === owner) put(data as Board);
     } finally {
       if (pending.current.get(id) === turn) pending.current.delete(id);
     }
   };
 
   const remove = async (id: string) => {
-    const { error } = await supabase!.from("boards").delete().eq("id", id);
-    fail(error);
+    if (!local) {
+      const { error } = await supabase!.from("boards").delete().eq("id", id);
+      fail(error);
+    }
     setBoards((list) => list?.filter((b) => b.id !== id));
   };
 
   return (
-    <BoardsContext value={{ boards, error, reload, create, update, remove }}>
+    <BoardsContext value={{ boards, local, error, reload, create, update, remove }}>
       {children}
     </BoardsContext>
   );
