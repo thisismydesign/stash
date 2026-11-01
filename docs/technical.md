@@ -12,6 +12,7 @@ Purpose: the stack and the principles every change MUST respect. Intent, not imp
 
 - A board is one row: `title`, `kind`, `content`, `tags`, `pinned`, `archived_at`, `share_token`.
 - A shared board is one whose `share_token` is set; the link `#/s/<token>` shows it read-only to anyone. The database mints the token (`share_board`) and clears it (`unshare_board`); `shared_board(token)` is the only anonymous read, so nothing lists shared boards.
+- Shared boards stay out of search and AI indexes: the page carries a `robots` meta tag while it shows one. The address is a fragment, so no server, header or `robots.txt` can tell it from the home page, and a crawler without scripts sees neither.
 - `content` is the whole board as text: Markdown for `todo` and `markdown`, a document for `html`. One text column keeps every kind readable and writable by an agent with a single request.
 - A visitor who is not signed in sees the example boards from `app/src/lib/demo`, kept in memory; the dev account starts with the same ones.
 - `kind` chooses the renderer. `todo` renders task items as live checkboxes; ticking one moves it under a `## Done` heading, unticking brings it back. The rules live in `app/src/lib/todo.ts` and the agent instructions, and MUST agree.

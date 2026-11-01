@@ -182,6 +182,8 @@ test("shares a board by link until sharing is turned off", async ({ page, reques
   await expect(guest.getByText("e2e-team")).toBeVisible();
   await expect(guest.getByText("You are looking at example boards.")).toBeHidden();
   await expect(guest.getByRole("button", { name: "Edit" })).toBeHidden();
+  const robots = guest.locator('head meta[name="robots"]');
+  await expect(robots).toHaveAttribute("content", /noindex/);
 
   await page.getByRole("button", { name: "Actions for e2e Shared" }).click();
   await page.getByRole("menuitem", { name: "Sharing…" }).click();
@@ -189,6 +191,9 @@ test("shares a board by link until sharing is turned off", async ({ page, reques
   await expect(dialog.getByRole("textbox", { name: "Link" })).toBeHidden();
   await guest.reload();
   await expect(guest.getByText("This link no longer works")).toBeVisible();
+  await guest.getByRole("button", { name: "Go to Stash" }).click();
+  await expect(guest.getByText("You are looking at example boards.")).toBeVisible();
+  await expect(robots).toHaveCount(0);
   await reader.close();
 });
 
