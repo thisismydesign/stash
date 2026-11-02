@@ -179,6 +179,25 @@ test("makes a board, writes it formatted and as source, and deletes it", async (
   await expect(page.getByRole("button", { name: /^e2e Renamed/ })).toBeHidden();
 });
 
+test("makes a page from a template", async ({ page }) => {
+  await signIn(page);
+  await page.goto("/");
+  await page.getByRole("button", { name: "New board" }).click();
+  const dialog = page.getByRole("dialog");
+  await page.getByLabel("Title").fill("e2e Kitchen");
+  await expect(dialog.getByRole("radio", { name: /^Blank/ })).toBeChecked();
+  await dialog.getByText("Markdown", { exact: true }).click();
+  await expect(dialog.getByText("Template")).toBeHidden();
+  await dialog.getByText("Page", { exact: true }).click();
+  await dialog.getByRole("radio", { name: /^Mood board/ }).click();
+  await page.getByRole("button", { name: "Create" }).click();
+  await expect(page.getByRole("heading", { name: "e2e Kitchen" })).toBeVisible();
+  await expect(page.getByText("Page", { exact: true })).toBeVisible();
+  const frame = page.frameLocator('iframe[title="e2e Kitchen"]');
+  await expect(frame.getByRole("heading", { name: "e2e Kitchen" })).toBeVisible();
+  await expect(frame.getByText("Your picture").first()).toBeVisible();
+});
+
 test("shares a board by link until sharing is turned off", async ({ page, request, browser }) => {
   const session = await signIn(page);
   await seed(request, session, {

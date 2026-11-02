@@ -18,7 +18,7 @@ import {
   UnstyledButton,
 } from "@mantine/core";
 import {
-  IconCode,
+  IconLayout2,
   IconLayoutGrid,
   IconListCheck,
   IconListDetails,
@@ -30,20 +30,22 @@ import {
   IconSquare,
 } from "@tabler/icons-react";
 import { useMemo, useState } from "react";
-import { BOARD_KINDS, type Board, type BoardKind } from "@shared/tables.ts";
+import type { Board, BoardKind } from "@shared/tables.ts";
 import { BoardMenu } from "./BoardMenu.tsx";
 import { Picture } from "./components/Picture.tsx";
 import { Setting, SettingsMenu } from "./components/Settings.tsx";
+import { TemplatePicker } from "./components/TemplatePicker.tsx";
 import { useBoards } from "./lib/boards.tsx";
 import { ago } from "./lib/format.ts";
 import { preview } from "./lib/preview.ts";
+import { TEMPLATES, fromTemplate, type TemplateId } from "./lib/templates/index.ts";
 import { useLocalState } from "./lib/useLocalState.ts";
 import { KIND_COLOR, KIND_LABEL, tagColors } from "./theme.ts";
 
-const KIND_ICON: Record<BoardKind, typeof IconCode> = {
+const KIND_ICON: Record<BoardKind, typeof IconLayout2> = {
   todo: IconListCheck,
   markdown: IconMarkdown,
-  html: IconCode,
+  html: IconLayout2,
 };
 
 export function KindIcon({ kind, size = 16 }: { kind: BoardKind; size?: number }) {
@@ -210,6 +212,13 @@ function Section({ title, view, ...list }: ListProps & { title?: string; view: "
   );
 }
 
+type Format = "page" | "markdown";
+
+const startInput = (format: Format, template: TemplateId, title: string) =>
+  format === "markdown"
+    ? { kind: "markdown" as const, content: "" }
+    : fromTemplate(template, title);
+
 function NewBoard({
   opened,
   tags: known,
@@ -223,7 +232,8 @@ function NewBoard({
 }) {
   const { create } = useBoards();
   const [title, setTitle] = useState("");
-  const [kind, setKind] = useState<BoardKind>("todo");
+  const [format, setFormat] = useState<Format>("page");
+  const [template, setTemplate] = useState<TemplateId>(TEMPLATES[0].id);
   const [tags, setTags] = useState<string[]>([]);
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState<string>();
@@ -231,9 +241,15 @@ function NewBoard({
     setBusy(true);
     setError(undefined);
     try {
-      const board = await create({ title: title.trim(), kind, content: "", tags: cleanTags(tags) });
+      const name = title.trim();
+      const board = await create({
+        title: name,
+        ...startInput(format, template, name),
+        tags: cleanTags(tags),
+      });
       setTitle("");
-      setKind("todo");
+      setFormat("page");
+      setTemplate(TEMPLATES[0].id);
       setTags([]);
       onCreated(board.id);
     } catch (e) {
@@ -259,10 +275,14 @@ function NewBoard({
           />
           <SegmentedControl
             fullWidth
-            value={kind}
-            onChange={(v) => setKind(v as BoardKind)}
-            data={BOARD_KINDS.map((k) => ({ value: k, label: KIND_LABEL[k] }))}
+            value={format}
+            onChange={(v) => setFormat(v as Format)}
+            data={[
+              { value: "page", label: KIND_LABEL.html },
+              { value: "markdown", label: KIND_LABEL.markdown },
+            ]}
           />
+          {format === "page" && <TemplatePicker value={template} onChange={setTemplate} />}
           <TagsInput
             label="Tags"
             data={known}

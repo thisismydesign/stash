@@ -16,7 +16,7 @@ export const KIND_COLOR: Record<BoardKind, string> = {
 export const KIND_LABEL: Record<BoardKind, string> = {
   todo: "To-do",
   markdown: "Markdown",
-  html: "HTML",
+  html: "Page",
 };
 
 /** Mantine's defaults read faint on dark backgrounds. */

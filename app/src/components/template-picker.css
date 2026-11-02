@@ -1,0 +1,14 @@
+.template-icon {
+  flex-shrink: 0;
+  margin-top: 1px;
+  color: var(--mantine-color-dimmed);
+}
+
+.template[data-checked] {
+  border-color: var(--mantine-primary-color-filled);
+  background: var(--mantine-primary-color-light);
+}
+
+.template[data-checked] .template-icon {
+  color: var(--mantine-primary-color-filled);
+}

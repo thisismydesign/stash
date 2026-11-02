@@ -1,4 +1,4 @@
-// The example boards: what a signed-out visitor sees, and what supabase/seed/dev-account.ts gives the account `pnpm run dev` signs in as. One of each kind.
+// The example boards: what a signed-out visitor sees, and what supabase/seed/dev-account.ts gives the account `pnpm run dev` signs in as. One of each kind, and a page from a template.
 // Relative imports only: the seed script runs this under Node.
 
 import type { Board } from "../../../../shared/tables.ts";
@@ -20,6 +20,13 @@ export const exampleBoards = (file: (name: string) => string): ExampleBoard[] =>
     tags: ["home", "errands"],
     pinned: false,
     content: file("todo.md"),
+  },
+  {
+    title: "Living room",
+    kind: "html",
+    tags: ["home", "ideas"],
+    pinned: false,
+    content: file("living-room.html"),
   },
   {
     title: "Car purchase",

@@ -1,0 +1,56 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>{{title}}</title>
+<style>
+  :root { color-scheme: light dark; --bg: #f5f7f7; --card: #fff; --text: #1d1d22; --muted: #6b6b76; --line: #e3e7e6; --accent: #0ca678; --pick: #0ca67814; }
+  @media (prefers-color-scheme: dark) { :root { --bg: #1a1b1e; --card: #25262b; --text: #e9e9ec; --muted: #9a9aa6; --line: #373a40; --accent: #20c997; --pick: #20c99722; } }
+  * { box-sizing: border-box; }
+  body { margin: 0; padding: 16px; font: 15px/1.45 -apple-system, "Segoe UI", Roboto, Helvetica, Arial, sans-serif; background: var(--bg); color: var(--text); }
+  h1 { margin: 0 0 4px; font-size: 22px; }
+  h2 { font-size: 16px; margin: 20px 0 6px; }
+  .note { color: var(--muted); font-size: 13px; margin: 0 0 14px; }
+  .scroll { overflow-x: auto; border: 1px solid var(--line); border-radius: 14px; background: var(--card); }
+  table { border-collapse: collapse; width: 100%; min-width: 480px; font-size: 14px; }
+  th, td { padding: 10px 12px; text-align: left; vertical-align: top; border-bottom: 1px solid var(--line); }
+  tbody tr:last-child th, tbody tr:last-child td { border-bottom: 0; }
+  thead th { font-size: 15px; }
+  tbody th { position: sticky; left: 0; background: var(--card); color: var(--muted); font-weight: 500; white-space: nowrap; }
+  .pick { background: var(--pick); }
+  .tag { display: inline-block; margin-left: 6px; padding: 1px 8px; border-radius: 999px; background: var(--accent); color: #fff; font-size: 11px; font-weight: 600; vertical-align: middle; }
+  .bar { display: block; width: 80px; height: 8px; margin-top: 6px; border-radius: 999px; background: var(--line); overflow: hidden; }
+  .bar i { display: block; height: 100%; background: var(--accent); }
+  p { margin: 0; }
+  a { color: var(--accent); }
+</style>
+</head>
+<body>
+<h1>{{title}}</h1>
+<p class="note">Options side by side. Mark the pick and say why.</p>
+
+<div class="scroll">
+  <table>
+    <thead>
+      <tr>
+        <th></th>
+        <th>Option A</th>
+        <th class="pick">Option B <span class="tag">Pick</span></th>
+        <th>Option C</th>
+      </tr>
+    </thead>
+    <tbody>
+      <tr><th>Price</th><td>€</td><td class="pick">€€</td><td>€€€</td></tr>
+      <tr><th>Good</th><td>Cheapest</td><td class="pick">Does the job well</td><td>Best in class</td></tr>
+      <tr><th>Not so good</th><td>Basic</td><td class="pick">Often sold out</td><td>Costs the most</td></tr>
+      <tr><th>Rating</th><td><span class="bar"><i style="width: 60%"></i></span></td><td class="pick"><span class="bar"><i style="width: 80%"></i></span></td><td><span class="bar"><i style="width: 100%"></i></span></td></tr>
+      <tr><th>Where</th><td><a href="https://example.com" target="_blank" rel="noopener">Shop</a></td><td class="pick"><a href="https://example.com" target="_blank" rel="noopener">Shop</a></td><td><a href="https://example.com" target="_blank" rel="noopener">Shop</a></td></tr>
+    </tbody>
+  </table>
+</div>
+
+<h2>Verdict</h2>
+<p>Option B: good enough, at a price that leaves room for the rest.</p>
+</body>
+</html>
