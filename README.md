@@ -1,6 +1,6 @@
 # Stash
 
-Personal notepad: boards for notes, to-do lists and ideas, kept up to date by you and your AI agent.
+Personal notepad: boards, notes, lists and pages. Notion, Obsidian and Notes all in one.
 
 Tell your agent what is on your mind; it files it on the right board. Open Stash to see what matters next.
 
