@@ -5,6 +5,7 @@ import {
   Button,
   Group,
   Loader,
+  SegmentedControl,
   Stack,
   TagsInput,
   Text,
@@ -20,9 +21,11 @@ import { KindIcon, TagBadges, cleanTags, unique } from "./Boards.tsx";
 import { HtmlView } from "./components/HtmlView.tsx";
 import { Picture } from "./components/Picture.tsx";
 import { Markdown } from "./components/Markdown.tsx";
+import { MarkdownEditor } from "./components/MarkdownEditor.tsx";
 import { useBoards } from "./lib/boards.tsx";
 import { ago } from "./lib/format.ts";
 import { settle, toggleTask } from "./lib/todo.ts";
+import { useLocalState } from "./lib/useLocalState.ts";
 import { KIND_COLOR, KIND_LABEL, tagColors } from "./theme.ts";
 
 type Draft = { title: string; tags: string[]; content: string };
@@ -65,6 +68,8 @@ const draftOf = (board: Board): Draft => ({
   content: board.content,
 });
 
+type View = "formatted" | "source";
+
 function Editor({
   draft,
   kind,
@@ -76,6 +81,8 @@ function Editor({
   tags: string[];
   onChange: (d: Draft) => void;
 }) {
+  const [view, setView] = useLocalState<View>("editor", "formatted");
+  const formatted = kind === "markdown" && view === "formatted";
   return (
     <Stack gap="sm">
       <TagsInput
@@ -85,16 +92,36 @@ function Editor({
         value={draft.tags}
         onChange={(tags) => onChange({ ...draft, tags })}
       />
-      <Textarea
-        aria-label="Content"
-        autosize
-        minRows={14}
-        spellCheck={kind !== "html"}
-        placeholder={PLACEHOLDER[kind]}
-        value={draft.content}
-        onChange={(e) => onChange({ ...draft, content: e.currentTarget.value })}
-        styles={{ input: { fontFamily: "var(--mantine-font-family-monospace)", fontSize: 13 } }}
-      />
+      {kind === "markdown" && (
+        <Group justify="flex-end">
+          <SegmentedControl
+            size="xs"
+            value={view}
+            onChange={(v) => setView(v as View)}
+            data={[
+              { value: "formatted", label: "Formatted" },
+              { value: "source", label: "Source" },
+            ]}
+          />
+        </Group>
+      )}
+      {formatted ? (
+        <MarkdownEditor
+          initial={draft.content}
+          onChange={(content) => onChange({ ...draft, content })}
+        />
+      ) : (
+        <Textarea
+          aria-label="Content"
+          autosize
+          minRows={14}
+          spellCheck={kind !== "html"}
+          placeholder={PLACEHOLDER[kind]}
+          value={draft.content}
+          onChange={(e) => onChange({ ...draft, content: e.currentTarget.value })}
+          styles={{ input: { fontFamily: "var(--mantine-font-family-monospace)", fontSize: 13 } }}
+        />
+      )}
     </Stack>
   );
 }

@@ -142,7 +142,7 @@ test("ticks a task under Done and brings it back", async ({ page, request }) => 
     .toBe("- [ ] Visa\n- [ ] Bike\n  - [ ] Helmet\n- [ ] Pillow\n\n## Done\n\n");
 });
 
-test("makes a board, writes it, and deletes it", async ({ page }) => {
+test("makes a board, writes it formatted and as source, and deletes it", async ({ page }) => {
   await signIn(page);
   await page.goto("/");
   await page.getByRole("button", { name: "New board" }).click();
@@ -151,9 +151,17 @@ test("makes a board, writes it, and deletes it", async ({ page }) => {
   await page.getByRole("combobox", { name: "Tags" }).fill("e2e Ideas");
   await page.keyboard.press("Enter");
   await page.getByRole("button", { name: "Create" }).click();
+  // A Markdown board opens formatted: what is typed shows rendered, and the source is Markdown.
   const editor = page.getByLabel("Content");
   await expect(editor).toBeVisible();
+  await editor.pressSequentially("# Hello\nSome **bold** words.");
+  await expect(editor.getByRole("heading", { name: "Hello" })).toBeVisible();
+  await expect(editor.locator("strong")).toHaveText("bold");
+  await page.getByText("Source", { exact: true }).click();
+  await expect(editor).toHaveValue("# Hello\n\nSome **bold** words.\n");
   await editor.fill("# Hello\n\nA [link](https://example.com).");
+  await page.getByText("Formatted", { exact: true }).click();
+  await expect(editor.getByRole("link", { name: "link" })).toBeVisible();
   await page.getByRole("button", { name: "Save" }).click();
   await expect(page.getByRole("heading", { name: "Hello" })).toBeVisible();
   await expect(page.getByRole("link", { name: "link" })).toHaveAttribute("target", "_blank");

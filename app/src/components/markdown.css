@@ -31,6 +31,16 @@
   text-decoration: none;
 }
 
+/* The editor's ticked items read like the view's. */
+.markdown li[data-checked="true"] > div {
+  color: var(--mantine-color-dimmed);
+  text-decoration: line-through;
+}
+
+.markdown li[data-checked="true"] > div ul {
+  text-decoration: none;
+}
+
 .markdown p:last-child {
   margin-bottom: 0;
 }
