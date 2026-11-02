@@ -3,11 +3,17 @@ import { Link, RichTextEditor, getTaskListExtension } from "@mantine/tiptap";
 import { Extension, type Editor } from "@tiptap/core";
 import { Image } from "@tiptap/extension-image";
 import { TaskItem, TaskList } from "@tiptap/extension-list";
-import { TableKit } from "@tiptap/extension-table";
+import {
+  Table,
+  TableCell,
+  TableHeader,
+  TableRow,
+  renderTableToMarkdown,
+} from "@tiptap/extension-table";
 import { Placeholder } from "@tiptap/extensions";
 import { Markdown } from "@tiptap/markdown";
 import { Plugin } from "@tiptap/pm/state";
-import { useEditor } from "@tiptap/react";
+import { useEditor, useEditorState } from "@tiptap/react";
 import StarterKit from "@tiptap/starter-kit";
 import { useState } from "react";
 
@@ -30,6 +36,11 @@ function markdownOf(editor: Editor): string {
   return text && `${text}\n`;
 }
 
+// The stock table brings newlines of its own, a second blank line on either side of it.
+const MarkdownTable = Table.extend({
+  renderMarkdown: (node, h) => renderTableToMarkdown(node, h).replace(/^\n+|\n+$/g, ""),
+}).configure({ resizable: false });
+
 const PasteMarkdown = Extension.create({
   name: "pasteMarkdown",
   addProseMirrorPlugins() {
@@ -43,7 +54,10 @@ const extensions = [
   Link,
   getTaskListExtension(TaskList),
   TaskItem.configure({ nested: true }),
-  TableKit.configure({ table: { resizable: false } }),
+  MarkdownTable,
+  TableRow,
+  TableHeader,
+  TableCell,
   Image,
   Markdown,
   PasteMarkdown,
@@ -69,6 +83,10 @@ export function MarkdownEditor({
     editorProps: { attributes: { "aria-label": "Content" } },
     onCreate: ({ editor }) => setRewrites(markdownOf(editor).trimEnd() !== content.trimEnd()),
     onUpdate: ({ editor }) => onChange(markdownOf(editor)),
+  });
+  const inTable = useEditorState({
+    editor,
+    selector: ({ editor }) => editor?.isActive("table") ?? false,
   });
   return (
     <RichTextEditor editor={editor} variant="subtle">
@@ -103,7 +121,20 @@ export function MarkdownEditor({
           <RichTextEditor.Blockquote />
           <RichTextEditor.CodeBlock />
           <RichTextEditor.Hr />
+          <RichTextEditor.TableInsert />
         </RichTextEditor.ControlsGroup>
+        {/* Markdown tables have one header row and no merged cells, so only rows and columns change. */}
+        {inTable && (
+          <RichTextEditor.ControlsGroup>
+            <RichTextEditor.TableRowBefore />
+            <RichTextEditor.TableRowAfter />
+            <RichTextEditor.TableRowDelete />
+            <RichTextEditor.TableColumnBefore />
+            <RichTextEditor.TableColumnAfter />
+            <RichTextEditor.TableColumnDelete />
+            <RichTextEditor.TableDelete />
+          </RichTextEditor.ControlsGroup>
+        )}
         <RichTextEditor.ControlsGroup>
           <RichTextEditor.Undo />
           <RichTextEditor.Redo />

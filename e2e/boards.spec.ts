@@ -179,6 +179,41 @@ test("makes a board, writes it formatted and as source, and deletes it", async (
   await expect(page.getByRole("button", { name: /^e2e Renamed/ })).toBeHidden();
 });
 
+test("builds a table with the editor's table tools", async ({ page, request }) => {
+  const session = await signIn(page);
+  const id = await seed(request, session, {
+    title: "e2e Table",
+    kind: "markdown",
+    content: "# Plan\n\nStops.\n",
+  });
+  await open(page, "e2e Table");
+  await page.getByRole("button", { name: "Edit" }).click();
+  await expect(page.getByLabel("Content").getByText("Stops.")).toBeVisible();
+  // Row and column tools show only inside a table.
+  await expect(page.getByRole("button", { name: "Add column after" })).toBeHidden();
+  await page.getByRole("button", { name: "Insert table" }).click();
+  await page.getByRole("button", { name: "Insert 2 × 2 table" }).click();
+  await page.keyboard.type("City");
+  await page.keyboard.press("Tab");
+  await page.keyboard.type("Nights");
+  await page.keyboard.press("Tab");
+  await page.keyboard.type("Hanoi");
+  // Rows and columns go next to the cell the cursor is in.
+  await page.getByRole("button", { name: "Add column after" }).click();
+  await page.getByRole("button", { name: "Add row after" }).click();
+  await page.getByRole("button", { name: "Save" }).click();
+  await expect(page.getByRole("table")).toBeVisible();
+  await expect
+    .poll(() => content(request, session, id))
+    .toBe(
+      "# Plan\n\nStops.\n\n" +
+        "| City  |     | Nights |\n" +
+        "| ----- | --- | ------ |\n" +
+        "| Hanoi |     |        |\n" +
+        "|       |     |        |\n",
+    );
+});
+
 test("makes a page from a template", async ({ page }) => {
   await signIn(page);
   await page.goto("/");
