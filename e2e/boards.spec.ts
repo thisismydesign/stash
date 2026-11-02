@@ -1,6 +1,15 @@
 import { expect, test, type APIRequestContext, type Page } from "@playwright/test";
 import type { Session } from "@supabase/supabase-js";
-import { API, REST, TEST_EMAIL, admin, canSignIn, restHeaders, signIn } from "./session.ts";
+import {
+  API,
+  REST,
+  SUPABASE_URL,
+  TEST_EMAIL,
+  admin,
+  canSignIn,
+  restHeaders,
+  signIn,
+} from "./session.ts";
 
 // A 1×1 PNG.
 const PNG = Buffer.from(
@@ -249,9 +258,7 @@ test("gives a board a picture by link or upload, and shows it while shared", asy
   // The file is private: the token is the only way in for a reader, and only while the board is shared.
   const reader = await browser.newContext();
   const guest = await reader.newPage();
-  const bare = await guest.request.get(
-    `${process.env.VITE_SUPABASE_URL}/storage/v1/object/public/images/${path}`,
-  );
+  const bare = await guest.request.get(`${SUPABASE_URL}/storage/v1/object/public/images/${path}`);
   expect(bare.status()).toBe(400);
   const shared = await request.post(`${REST}/rpc/share_board`, {
     headers: restHeaders(session),
