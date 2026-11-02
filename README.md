@@ -8,7 +8,7 @@ Tell your agent what is on your mind; it files it on the right board. Open Stash
 
 ## Boards
 
-A board is a page with a title and colour-coded tags. Pinned boards sit on top; archived ones stay out of the way until asked for. The view, the tag filter and the archive switch live behind one button beside the search.
+A board has a title and colour-coded tags. Pinned boards sit on top; archived ones stay out of the way until asked for. The view, the tag filter and the archive switch live behind one button beside the search.
 
 <p>
   <img src="docs/screenshots/boards.png" alt="Boards as tiles" width="300">
@@ -21,6 +21,8 @@ Boards also show as a list, and each board's menu pins, archives or deletes it, 
   <img src="docs/screenshots/list.png" alt="Boards as a list" width="300">
   <img src="docs/screenshots/menu.png" alt="A board's menu" width="300">
 </p>
+
+A new board is a page or Markdown. A page starts from a template: blank, a to-do, a mood board of pictures, a comparison, a recipe or a timeline.
 
 ### To-do
 
@@ -40,12 +42,12 @@ Free-form notes, rendered. Edit them as you see them, or switch to the Markdown 
   <img src="docs/screenshots/edit.png" alt="Editing a board" width="300">
 </p>
 
-### HTML
+### Page
 
-A page of your own, rendered in a sandbox: mood boards, comparisons, anything with images, links and a little script.
+A page of your own, rendered in a sandbox: mood boards, comparisons, anything with images, links and a little script. Your agent writes and changes it; the templates give it a shape.
 
 <p>
-  <img src="docs/screenshots/html.png" alt="An HTML board" width="300">
+  <img src="docs/screenshots/html.png" alt="A page" width="300">
 </p>
 
 ### Sharing

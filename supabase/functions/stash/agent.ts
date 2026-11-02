@@ -11,7 +11,7 @@ A board is one row in \`boards\`: \`title\`, \`kind\`, \`content\`, \`tags\`, \`
 - \`kind\` is one of:
   - \`todo\` — a Markdown task list. Items are \`- [ ] text\`; nested items indent two spaces under their parent. Ticked items are \`- [x]\` and live under a \`## Done\` heading at the end; the app moves whole top-level items there when ticked and back when unticked. Open items stay above the heading. Headings and plain lines may group items.
   - \`markdown\` — free-form notes, rendered with GitHub-flavoured Markdown.
-  - \`html\` — a complete document, rendered in a sandboxed iframe (scripts run, no access to the app). Inline styles and scripts, absolute URLs for images.
+  - \`html\` — a complete document, rendered in a sandboxed iframe (scripts run, no access to the app); the app calls it a page. Inline styles and scripts, absolute URLs for images, \`color-scheme: light dark\` so it reads in either theme. The app starts people off with templates (a mood board of pictures, a comparison, a recipe, a timeline); design yours to fit what the user asked for.
 - \`tags\` is a list of short lower-case labels (for example \`travel\`, \`home\`, \`cars\`); the app colours and filters by them. Reuse what exists before inventing new ones: list the boards first.
 - \`pinned\` boards sort first. \`archived_at\` hides a board from the main list; never delete a board the user did not ask to delete.
 - \`share_token\` is set while the board is shared: anyone with the link \`{{shareLink}}\` can read it. Only the sharing functions below change it. Share a board only when the user asks.

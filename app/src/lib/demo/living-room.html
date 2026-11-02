@@ -1,0 +1,64 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Living room</title>
+<style>
+  :root { color-scheme: light dark; --bg: #f5f7f7; --card: #fff; --text: #1d1d22; --muted: #6b6b76; --line: #e3e7e6; --accent: #0ca678; }
+  @media (prefers-color-scheme: dark) { :root { --bg: #1a1b1e; --card: #25262b; --text: #e9e9ec; --muted: #9a9aa6; --line: #373a40; --accent: #20c997; } }
+  * { box-sizing: border-box; }
+  body { margin: 0; padding: 16px; font: 15px/1.45 -apple-system, "Segoe UI", Roboto, Helvetica, Arial, sans-serif; background: var(--bg); color: var(--text); }
+  h1 { margin: 0 0 4px; font-size: 22px; }
+  .note { color: var(--muted); font-size: 13px; margin: 0 0 14px; }
+  .palette { display: flex; gap: 8px; margin-bottom: 16px; }
+  .palette span { flex: 1; height: 28px; border-radius: 8px; border: 1px solid var(--line); }
+  .board { columns: 3 150px; column-gap: 12px; }
+  .pin { break-inside: avoid; margin: 0 0 12px; background: var(--card); border: 1px solid var(--line); border-radius: 14px; overflow: hidden; }
+  .pin img { display: block; width: 100%; height: auto; }
+  figcaption { padding: 8px 12px 10px; font-size: 13px; font-weight: 600; }
+  figcaption small { display: block; color: var(--muted); font-weight: 400; }
+  .words { padding: 14px; font-size: 15px; font-style: italic; }
+</style>
+</head>
+<body>
+<h1>Living room</h1>
+<p class="note">Warm and lived-in, a little Nordic. Terracotta and deep green against cream walls; wood, wool and brass.</p>
+
+<div class="palette" aria-label="Colours">
+  <span style="background: #ebe4d8" title="Cream walls"></span>
+  <span style="background: #b08d57" title="Brass"></span>
+  <span style="background: #a84a32" title="Terracotta"></span>
+  <span style="background: #2f4f3e" title="Deep green"></span>
+  <span style="background: #4a3728" title="Dark wood"></span>
+</div>
+
+<div class="board">
+  <figure class="pin">
+    <img src="https://upload.wikimedia.org/wikipedia/commons/thumb/c/cd/A_Hygge_moment.jpg/500px-A_Hygge_moment.jpg" width="500" height="750" alt="Wool socks in front of a fire, a book on the lap" loading="lazy" onerror="this.remove()">
+    <figcaption>The evening<small>Fire, wool, a book</small></figcaption>
+  </figure>
+  <figure class="pin">
+    <img src="https://upload.wikimedia.org/wikipedia/commons/thumb/1/18/Hotamis_Kilim.jpg/500px-Hotamis_Kilim.jpg" width="500" height="690" alt="A red, blue and cream kilim" loading="lazy" onerror="this.remove()">
+    <figcaption>Floor<small>A kilim, worn in</small></figcaption>
+  </figure>
+  <figure class="pin">
+    <img src="https://upload.wikimedia.org/wikipedia/commons/thumb/6/6d/Orkide_i_finstua_mot_vest.jpg/500px-Orkide_i_finstua_mot_vest.jpg" width="500" height="333" alt="An orchid on a sunny windowsill" loading="lazy" onerror="this.remove()">
+    <figcaption>Window<small>Flowers, linen curtains</small></figcaption>
+  </figure>
+  <figure class="pin words">“Nothing matching, everything belonging.”</figure>
+  <figure class="pin">
+    <img src="https://upload.wikimedia.org/wikipedia/commons/thumb/2/2e/Monstera_deliciosa2.jpg/500px-Monstera_deliciosa2.jpg" width="500" height="568" alt="A tall monstera" loading="lazy" onerror="this.remove()">
+    <figcaption>Corner<small>One big plant, not five small ones</small></figcaption>
+  </figure>
+  <figure class="pin">
+    <img src="https://upload.wikimedia.org/wikipedia/commons/thumb/4/42/%E4%B8%AD%E5%9C%8B_%E5%8D%97%E5%AE%8B_%E5%BB%BA%E7%AA%AF_%E5%85%94%E6%AF%AB%E9%87%89%E8%8C%B6%E7%A2%97-Tea_Bowl_with_%E2%80%9CHare%E2%80%99s-Fur%E2%80%9D_Glaze_MET_DP372022.jpg/500px-%E4%B8%AD%E5%9C%8B_%E5%8D%97%E5%AE%8B_%E5%BB%BA%E7%AA%AF_%E5%85%94%E6%AF%AB%E9%87%89%E8%8C%B6%E7%A2%97-Tea_Bowl_with_%E2%80%9CHare%E2%80%99s-Fur%E2%80%9D_Glaze_MET_DP372022.jpg" width="500" height="375" alt="A dark glazed tea bowl" loading="lazy" onerror="this.remove()">
+    <figcaption>Shelf<small>Dark glazes, nothing shiny</small></figcaption>
+  </figure>
+  <figure class="pin">
+    <img src="https://upload.wikimedia.org/wikipedia/commons/thumb/a/aa/LA2_Skultuna_kontorsljusstake.jpg/500px-LA2_Skultuna_kontorsljusstake.jpg" width="500" height="632" alt="A candle in a brass holder" loading="lazy" onerror="this.remove()">
+    <figcaption>Light<small>Brass and candles, no overhead lamp</small></figcaption>
+  </figure>
+</div>
+</body>
+</html>

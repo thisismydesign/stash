@@ -1,0 +1,58 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>{{title}}</title>
+<style>
+  :root { color-scheme: light dark; --bg: #f5f7f7; --card: #fff; --text: #1d1d22; --muted: #6b6b76; --line: #e3e7e6; --accent: #0ca678; }
+  @media (prefers-color-scheme: dark) { :root { --bg: #1a1b1e; --card: #25262b; --text: #e9e9ec; --muted: #9a9aa6; --line: #373a40; --accent: #20c997; } }
+  * { box-sizing: border-box; }
+  body { margin: 0; padding: 16px; font: 15px/1.45 -apple-system, "Segoe UI", Roboto, Helvetica, Arial, sans-serif; background: var(--bg); color: var(--text); }
+  h1 { margin: 0 0 4px; font-size: 22px; }
+  .note { color: var(--muted); font-size: 13px; margin: 0 0 18px; }
+  .timeline { list-style: none; margin: 0; padding: 0 0 0 22px; border-left: 2px solid var(--line); }
+  .timeline li { position: relative; padding: 0 0 18px 14px; }
+  .timeline li::before { content: ""; position: absolute; left: -29px; top: 5px; width: 12px; height: 12px; border-radius: 50%; background: var(--bg); border: 2px solid var(--line); }
+  .timeline .done::before { background: var(--line); }
+  .timeline .now::before { background: var(--accent); border-color: var(--accent); box-shadow: 0 0 0 4px color-mix(in srgb, var(--accent) 25%, transparent); }
+  .timeline .done { color: var(--muted); }
+  time { display: block; font-size: 12px; text-transform: uppercase; letter-spacing: .04em; color: var(--muted); }
+  .now time { color: var(--accent); font-weight: 600; }
+  b { font-size: 16px; }
+  p { margin: 2px 0 0; font-size: 14px; }
+</style>
+</head>
+<body>
+<h1>{{title}}</h1>
+<p class="note">What happens when. Past steps dim; the next one stands out.</p>
+
+<ol class="timeline">
+  <li class="done">
+    <time>Week 1</time>
+    <b>Decide</b>
+    <p>What it is, who it is for, when it is done.</p>
+  </li>
+  <li class="done">
+    <time>Week 2</time>
+    <b>Prepare</b>
+    <p>Gather what is needed; book what needs booking.</p>
+  </li>
+  <li class="now">
+    <time>This week</time>
+    <b>Do the first part</b>
+    <p>The piece everything else waits on.</p>
+  </li>
+  <li>
+    <time>Next week</time>
+    <b>Check</b>
+    <p>Look at what came out; fix what did not.</p>
+  </li>
+  <li>
+    <time>After</time>
+    <b>Finish</b>
+    <p>Hand it over, tidy up, note what to do differently.</p>
+  </li>
+</ol>
+</body>
+</html>

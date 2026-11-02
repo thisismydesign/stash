@@ -1,0 +1,61 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>{{title}}</title>
+<style>
+  :root { color-scheme: light dark; --bg: #f5f7f7; --card: #fff; --text: #1d1d22; --muted: #6b6b76; --line: #e3e7e6; --accent: #0ca678; }
+  @media (prefers-color-scheme: dark) { :root { --bg: #1a1b1e; --card: #25262b; --text: #e9e9ec; --muted: #9a9aa6; --line: #373a40; --accent: #20c997; } }
+  * { box-sizing: border-box; }
+  body { margin: 0; padding: 16px; font: 15px/1.45 -apple-system, "Segoe UI", Roboto, Helvetica, Arial, sans-serif; background: var(--bg); color: var(--text); }
+  h1 { margin: 0 0 4px; font-size: 22px; }
+  .note { color: var(--muted); font-size: 13px; margin: 0 0 14px; }
+  .palette { display: flex; gap: 8px; margin-bottom: 16px; }
+  .palette span { flex: 1; height: 28px; border-radius: 8px; border: 1px solid var(--line); }
+  .board { columns: 3 150px; column-gap: 12px; }
+  .pin { break-inside: avoid; margin: 0 0 12px; background: var(--card); border: 1px solid var(--line); border-radius: 14px; overflow: hidden; }
+  .pin img { display: block; width: 100%; height: auto; }
+  .slot { aspect-ratio: 4 / 3; display: grid; place-items: center; margin: 8px; border: 2px dashed var(--line); border-radius: 10px; background: var(--swatch); color: var(--muted); font-size: 13px; }
+  figcaption { padding: 8px 12px 10px; font-size: 13px; font-weight: 600; }
+  figcaption small { display: block; color: var(--muted); font-weight: 400; }
+  .words { padding: 14px; font-size: 15px; font-style: italic; }
+</style>
+</head>
+<body>
+<h1>{{title}}</h1>
+<p class="note">Pictures and colours that set the tone. Swap these for your own: edit the page, or ask your agent.</p>
+
+<div class="palette" aria-label="Colours">
+  <span style="background: #e8e1d5" title="Cream"></span>
+  <span style="background: #c9b79c" title="Sand"></span>
+  <span style="background: #8a9a7b" title="Sage"></span>
+  <span style="background: #c76b4a" title="Terracotta"></span>
+  <span style="background: #2f3a3a" title="Ink"></span>
+</div>
+
+<div class="board">
+  <figure class="pin">
+    <img src="https://upload.wikimedia.org/wikipedia/commons/thumb/5/51/A_foggy_winter_morning.jpg/500px-A_foggy_winter_morning.jpg" width="500" height="333" alt="Sunrise through morning mist" loading="lazy" onerror="this.remove()">
+    <figcaption>Soft light<small>Mist, warm mornings</small></figcaption>
+  </figure>
+  <figure class="pin">
+    <div class="slot" style="--swatch: #e8e1d5">Your picture</div>
+    <figcaption>Caption<small>Where it is from</small></figcaption>
+  </figure>
+  <figure class="pin">
+    <img src="https://upload.wikimedia.org/wikipedia/commons/thumb/8/88/Royal_Winter_Fair_Wool_2.jpg/500px-Royal_Winter_Fair_Wool_2.jpg" width="500" height="332" alt="Raw wool, close up" loading="lazy" onerror="this.remove()">
+    <figcaption>Texture<small>Wool, undyed</small></figcaption>
+  </figure>
+  <figure class="pin words">“A line that belongs on the board: a quote, a rule, a feeling.”</figure>
+  <figure class="pin">
+    <div class="slot" style="--swatch: #8a9a7b33">Your picture</div>
+    <figcaption>Caption<small>Where it is from</small></figcaption>
+  </figure>
+  <figure class="pin">
+    <div class="slot" style="--swatch: #c76b4a33">Your picture</div>
+    <figcaption>Caption<small>Where it is from</small></figcaption>
+  </figure>
+</div>
+</body>
+</html>
