@@ -21,6 +21,8 @@ The instance is a VM made with [supabase-vm](https://github.com/thisismydesign/s
 
 `pnpm run deploy`. The site is `https://<name>.<subdomain>.workers.dev`, where `<name>` is `name` in `app/wrangler.jsonc`.
 
+Optional: add a Custom Domain to the Worker in the Cloudflare dashboard (Settings, Domains & Routes). It is account state, not config, so later deploys keep it.
+
 ## CI
 
 `.github/workflows/ci.yml` deploys `main` and then runs the e2e specs against the site. It joins the tailnet with a Tailscale OAuth client that may tag devices `tag:ci`, and the tailnet's policy MUST let `tag:ci` reach the VM on 22 and 5432. The VM answers on 22 with OpenSSH, not Tailscale SSH, whose policy would block `tag:ci`. It reads these repository settings:

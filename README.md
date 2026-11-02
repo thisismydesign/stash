@@ -4,6 +4,8 @@ Personal notepad: boards for notes, to-do lists and ideas, kept up to date by yo
 
 Tell your agent what is on your mind; it files it on the right board. Open Stash to see what matters next.
 
+[Use it live](https://stash.thisismydesign.io) or [deploy your own](docs/deploy.md).
+
 ## Boards
 
 A board is a page with a title and colour-coded tags. Pinned boards sit on top; archived ones stay out of the way until asked for. The view, the tag filter and the archive switch live behind one button beside the search.
