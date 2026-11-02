@@ -20,6 +20,8 @@ export const endpoints = (e: Endpoints) => ({
   token: `${e.base}/token`,
   tokenRefresh: `${e.supabase}/auth/v1/token?grant_type=refresh_token`,
   rest: `${e.supabase}/rest/v1`,
+  storage: `${e.supabase}/storage/v1`,
+  user: `${e.supabase}/auth/v1/user`,
   restOpenapi: `${e.base}/rest-openapi.json`,
   openapi: `${e.base}/openapi.json`,
   instructions: `${e.base}/agent`,
@@ -163,6 +165,24 @@ export function openapi(e: Endpoints) {
         get: {
           summary: "Instructions for an agent working with Stash",
           responses: { "200": { description: "Markdown" } },
+        },
+      },
+      "/image": {
+        get: {
+          summary: "A shared board's uploaded picture; a linked one is in the board's image",
+          parameters: [
+            {
+              name: "token",
+              in: "query",
+              required: true,
+              schema: { type: "string" },
+              description: "The board's share_token",
+            },
+          ],
+          responses: {
+            "302": { description: "To a signed URL for the file, good for an hour" },
+            "404": { description: "No shared board with that token, or no uploaded picture on it" },
+          },
         },
       },
       "/openapi.json": {

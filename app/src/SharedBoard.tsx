@@ -1,11 +1,12 @@
 import { ActionIcon, Alert, Badge, Button, Group, Loader, Stack, Text, Title } from "@mantine/core";
 import { IconArrowLeft } from "@tabler/icons-react";
 import { useCallback, useEffect, useRef, useState } from "react";
-import type { SharedBoard } from "@shared/tables.ts";
+import { isImageLink, type SharedBoard } from "@shared/tables.ts";
 import { BoardContent, KindBadge } from "./Board.tsx";
 import { TagBadges, unique } from "./Boards.tsx";
+import { Picture } from "./components/Picture.tsx";
 import { ago } from "./lib/format.ts";
-import { supabase } from "./lib/supabase.ts";
+import { API_BASE, supabase } from "./lib/supabase.ts";
 import { useReloadOnReturn } from "./lib/useReloadOnReturn.ts";
 import { tagColors } from "./theme.ts";
 
@@ -78,6 +79,17 @@ export function SharedBoardPage({ token, onBack }: { token: string; onBack: () =
           Updated {ago(board.updated_at)}
         </Text>
       </Group>
+      {board.image && (
+        <Picture
+          src={
+            isImageLink(board.image)
+              ? board.image
+              : `${API_BASE}/image?token=${encodeURIComponent(token)}`
+          }
+          height={200}
+          radius="md"
+        />
+      )}
       <BoardContent board={board} />
     </Stack>
   );

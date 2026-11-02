@@ -11,7 +11,7 @@ Stash runs on Supabase (database, auth, Edge Function) and a Cloudflare Worker (
 
 ### Self-hosted
 
-The instance is a VM made with [supabase-vm](https://github.com/thisismydesign/supabase-vm): the official self-hosting bundle, reachable at `https://<vm>.<tailnet>.ts.net` over Tailscale Funnel, Postgres and SSH on the tailnet only. The values for `.env` are in `/opt/supabase/.env` inside the VM; `SUPABASE_DB_URL` selects this path. The bundle has no functions API, so the function's files are synced to `/opt/supabase/volumes/functions/` and its runtime restarted. The function MUST get `SITE_URL` (the web app) from the VM's compose file, next to `SUPABASE_PUBLIC_URL` and the keys the bundle already passes it; `docker compose up -d` applies that, a restart does not.
+The instance is a VM made with [supabase-vm](https://github.com/thisismydesign/supabase-vm): the official self-hosting bundle, reachable at `https://<vm>.<tailnet>.ts.net` over Tailscale Funnel, Postgres and SSH on the tailnet only. The values for `.env` are in `/opt/supabase/.env` inside the VM; `SUPABASE_DB_URL` selects this path. The bundle has no functions API, so the function's files are synced to `/opt/supabase/volumes/functions/` and its runtime restarted. The function MUST get `SITE_URL` (the web app) from the VM's compose file, next to `SUPABASE_PUBLIC_URL` and the keys the bundle already passes it; `docker compose up -d` applies that, a restart does not. Pictures live on the VM's disk under `/opt/supabase/volumes/storage`, not in Postgres: a backup of the database alone loses them, and deleting a user drops their boards but not their files, which stay under the user's folder in the `images` bucket until removed.
 
 ### Hosted
 

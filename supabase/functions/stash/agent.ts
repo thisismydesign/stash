@@ -5,7 +5,7 @@ Stash ({{site}}) is the user's personal notepad: boards of notes, lists and idea
 
 ## Boards
 
-A board is one row in \`boards\`: \`title\`, \`kind\`, \`content\`, \`tags\`, \`pinned\`, \`archived_at\`, \`share_token\`.
+A board is one row in \`boards\`: \`title\`, \`kind\`, \`content\`, \`tags\`, \`pinned\`, \`archived_at\`, \`share_token\`, \`image\`.
 
 - \`content\` is the whole board as text. Read it, change it, write it back whole.
 - \`kind\` is one of:
@@ -15,6 +15,7 @@ A board is one row in \`boards\`: \`title\`, \`kind\`, \`content\`, \`tags\`, \`
 - \`tags\` is a list of short lower-case labels (for example \`travel\`, \`home\`, \`cars\`); the app colours and filters by them. Reuse what exists before inventing new ones: list the boards first.
 - \`pinned\` boards sort first. \`archived_at\` hides a board from the main list; never delete a board the user did not ask to delete.
 - \`share_token\` is set while the board is shared: anyone with the link \`{{shareLink}}\` can read it. Only the sharing functions below change it. Share a board only when the user asks.
+- \`image\` is the board's picture, shown on its tile: an \`https://\` link, or the path of a file uploaded as below. Null for none.
 
 ## Writing for the user
 
@@ -39,6 +40,12 @@ Boards are read and written through the Supabase REST API at {{rest}}, described
 - Delete: \`DELETE {{rest}}/boards?id=eq.<id>\`
 - Share: \`POST {{rest}}/rpc/share_board\` with JSON \`{"board_id"}\`; returns \`[board]\` with \`share_token\` filled in. Give the user the link \`{{shareLink}}\`.
 - Stop sharing: \`POST {{rest}}/rpc/unshare_board\` with JSON \`{"board_id"}\`; the link stops working.
+
+Pictures go in the private \`images\` bucket, under a folder named by the user's id (\`GET {{user}}\` returns it as \`id\`), with the same headers as above:
+
+- Upload: \`POST {{storage}}/object/images/<user_id>/<name>\` with the file as the body and its \`Content-Type\` (PNG, JPEG, GIF, WebP or AVIF, up to 5 MB); then \`PATCH\` the board with \`{"image": "<user_id>/<name>"}\`.
+- Remove: \`PATCH\` the board with \`{"image": null}\`, then \`DELETE {{storage}}/object/images/<user_id>/<name>\`.
+- Read: \`POST {{storage}}/object/sign/images/<user_id>/<name>\` with JSON \`{"expiresIn": 3600}\` returns a \`signedURL\`, relative to \`{{storage}}\`.
 
 Sessions and this document are described at {{openapi}}.
 `;

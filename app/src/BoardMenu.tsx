@@ -2,6 +2,7 @@ import {
   ActionIcon,
   Button,
   CopyButton,
+  FileInput,
   Group,
   Menu,
   Modal,
@@ -14,14 +15,105 @@ import {
   IconArchive,
   IconArchiveOff,
   IconDots,
+  IconPhoto,
   IconPin,
   IconPinnedOff,
   IconShare,
   IconTrash,
 } from "@tabler/icons-react";
 import { useState } from "react";
-import { shareLink, type Board } from "@shared/tables.ts";
+import {
+  IMAGE_MAX_LENGTH,
+  IMAGE_TYPES,
+  isImageLink,
+  shareLink,
+  type Board,
+} from "@shared/tables.ts";
 import { useBoards } from "./lib/boards.tsx";
+
+function PictureModal({
+  board,
+  opened,
+  onClose,
+}: {
+  board: Board;
+  opened: boolean;
+  onClose: () => void;
+}) {
+  const { local, setPicture } = useBoards();
+  const [file, setFile] = useState<File | null>(null);
+  const [link, setLink] = useState("");
+  const [busy, setBusy] = useState(false);
+  const [error, setError] = useState<string>();
+  const url = link.trim();
+  const close = () => {
+    setFile(null);
+    setLink("");
+    setError(undefined);
+    onClose();
+  };
+  const run = async (picture: File | string | null) => {
+    if (typeof picture === "string" && !isImageLink(picture))
+      return setError("The link must start with https://");
+    if (typeof picture === "string" && picture.length > IMAGE_MAX_LENGTH)
+      return setError("The link is too long.");
+    setBusy(true);
+    setError(undefined);
+    try {
+      await setPicture(board.id, picture);
+      close();
+    } catch (e) {
+      setError((e as Error).message);
+    } finally {
+      setBusy(false);
+    }
+  };
+  return (
+    <Modal opened={opened} onClose={close} title={`Picture for “${board.title}”`} size="sm">
+      <form
+        onSubmit={(e) => {
+          e.preventDefault();
+          if (file || url) void run(file ?? url);
+        }}
+      >
+        <Stack gap="sm">
+          {!local && (
+            <FileInput
+              label="Upload"
+              placeholder="PNG, JPEG, GIF, WebP or AVIF, up to 5 MB"
+              accept={IMAGE_TYPES.join(",")}
+              clearable
+              value={file}
+              onChange={setFile}
+            />
+          )}
+          <TextInput
+            label={local ? "Link" : "Or link to one"}
+            placeholder="https://…"
+            disabled={!!file}
+            value={link}
+            onChange={(e) => setLink(e.currentTarget.value)}
+          />
+          {error && (
+            <Text size="sm" c="red">
+              {error}
+            </Text>
+          )}
+          <Group justify="flex-end">
+            {board.image && (
+              <Button variant="default" size="sm" disabled={busy} onClick={() => void run(null)}>
+                Remove
+              </Button>
+            )}
+            <Button type="submit" size="sm" loading={busy} disabled={!file && !url}>
+              Save
+            </Button>
+          </Group>
+        </Stack>
+      </form>
+    </Modal>
+  );
+}
 
 function ShareModal({
   board,
@@ -106,6 +198,7 @@ export function BoardMenu({
   const { local, update, remove } = useBoards();
   const [confirm, setConfirm] = useState(false);
   const [sharing, setSharing] = useState(false);
+  const [picturing, setPicturing] = useState(false);
   const [busy, setBusy] = useState(false);
   const run = async (fn: () => Promise<void>) => {
     setBusy(true);
@@ -151,6 +244,9 @@ export function BoardMenu({
           >
             {board.archived_at ? "Restore" : "Archive"}
           </Menu.Item>
+          <Menu.Item leftSection={<IconPhoto size={16} />} onClick={() => setPicturing(true)}>
+            Picture…
+          </Menu.Item>
           {!local && (
             <Menu.Item leftSection={<IconShare size={16} />} onClick={() => setSharing(true)}>
               {board.share_token ? "Sharing…" : "Share…"}
@@ -167,6 +263,7 @@ export function BoardMenu({
         </Menu.Dropdown>
       </Menu>
       {!local && <ShareModal board={board} opened={sharing} onClose={() => setSharing(false)} />}
+      <PictureModal board={board} opened={picturing} onClose={() => setPicturing(false)} />
       <Modal
         opened={confirm}
         onClose={() => setConfirm(false)}

@@ -10,7 +10,8 @@ Purpose: the stack and the principles every change MUST respect. Intent, not imp
 
 ## Model
 
-- A board is one row: `title`, `kind`, `content`, `tags`, `pinned`, `archived_at`, `share_token`.
+- A board is one row: `title`, `kind`, `content`, `tags`, `pinned`, `archived_at`, `share_token`, `image`.
+- `image` is the board's picture: an `https://` link, or the path of a file in the private `images` bucket under the owner's folder. A check constraint allows nothing else, so no row can point at another owner's file. Files are served by signed URL only: the owner's session mints its own, and the stash function's `/image?token=` mints one for a shared board's readers, so a file is reachable while its board is shared and for at most an hour after.
 - A shared board is one whose `share_token` is set; the link `/s/<token>` shows it read-only to anyone. The database mints the token (`share_board`) and clears it (`unshare_board`); `shared_board(token)` is the only anonymous read, so nothing lists shared boards.
 - Shared boards stay out of search and AI indexes: `/s/*` answers with a `noindex` header, `robots.txt` keeps training crawlers off it, and the page sends no referrer. The home page stays indexable. The price is that the host sees every token in its request paths, so request logs are sensitive.
 - `content` is the whole board as text: Markdown for `todo` and `markdown`, a document for `html`. One text column keeps every kind readable and writable by an agent with a single request.
@@ -29,7 +30,7 @@ Purpose: the stack and the principles every change MUST respect. Intent, not imp
 ### Lean on Supabase
 
 - Auth, PostgREST, RLS and generated OpenAPI before custom code.
-- Edge Functions only for what those cannot do: agent docs, sign-up and key exchange. Auth's own sign-up stays off so the function's throttle covers every new account, and an agent can make one without a password of its own.
+- Edge Functions only for what those cannot do: agent docs, sign-up, key exchange and signing a shared board's picture. Auth's own sign-up stays off so the function's throttle covers every new account, and an agent can make one without a password of its own.
 
 ### One contract between app and backend
 

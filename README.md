@@ -15,7 +15,7 @@ A board is a page with a title and colour-coded tags. Pinned boards sit on top; 
   <img src="docs/screenshots/filters.png" alt="View and filters" width="300">
 </p>
 
-Boards also show as a list, and each board's menu pins, archives or deletes it.
+Boards also show as a list, and each board's menu pins, archives or deletes it, and gives it a picture: a file of your own or a link.
 
 <p>
   <img src="docs/screenshots/list.png" alt="Boards as a list" width="300">

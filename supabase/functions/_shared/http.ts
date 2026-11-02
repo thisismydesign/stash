@@ -15,3 +15,9 @@ export const text = (body: string, type: string) =>
     status: 200,
     headers: { ...CORS, "Content-Type": type, "Cache-Control": "no-store" },
   });
+
+export const redirect = (location: string) =>
+  new Response(null, {
+    status: 302,
+    headers: { ...CORS, Location: location, "Cache-Control": "no-store" },
+  });

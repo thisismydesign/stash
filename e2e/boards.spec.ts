@@ -1,6 +1,12 @@
 import { expect, test, type APIRequestContext, type Page } from "@playwright/test";
 import type { Session } from "@supabase/supabase-js";
-import { REST, TEST_EMAIL, admin, canSignIn, restHeaders, signIn } from "./session.ts";
+import { API, REST, TEST_EMAIL, admin, canSignIn, restHeaders, signIn } from "./session.ts";
+
+// A 1×1 PNG.
+const PNG = Buffer.from(
+  "iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAYAAAAfFcSJAAAADUlEQVR42mNk+M9QDwADhgGAWjR9awAAAABJRU5ErkJggg==",
+  "base64",
+);
 
 const TODO = `- [ ] Visa
 - [ ] Pillow
@@ -41,6 +47,9 @@ test.afterEach(async () => {
   if (!owner) return;
   const { error } = await db.from("boards").delete().eq("owner", owner).like("title", "e2e%");
   if (error) throw new Error(error.message);
+  const files = await db.storage.from("images").list(owner);
+  if (files.data?.length)
+    await db.storage.from("images").remove(files.data.map((f) => `${owner}/${f.name}`));
 });
 
 async function open(page: Page, title: string) {
@@ -196,6 +205,79 @@ test("shares a board by link until sharing is turned off", async ({ page, reques
   await guest.getByRole("button", { name: "Go to Stash" }).click();
   await expect(guest.getByText("You are looking at example boards.")).toBeVisible();
   await reader.close();
+});
+
+test("gives a board a picture by link or upload, and shows it while shared", async ({
+  page,
+  request,
+  browser,
+}) => {
+  const session = await signIn(page);
+  const id = await seed(request, session, { title: "e2e Garden", kind: "markdown", content: "" });
+  await page.goto("/");
+  const tile = page.getByRole("button", { name: /^e2e Garden/ });
+  await page.getByRole("button", { name: "Actions for e2e Garden" }).click();
+  await page.getByRole("menuitem", { name: "Picture…" }).click();
+  const dialog = page.getByRole("dialog");
+  await dialog.getByLabel("Or link to one").fill("http://example.com/x.png");
+  await dialog.getByRole("button", { name: "Save" }).click();
+  await expect(dialog.getByText("The link must start with https://")).toBeVisible();
+  await dialog.getByLabel("Or link to one").fill("https://example.com/x.png");
+  await dialog.getByRole("button", { name: "Save" }).click();
+  await expect(tile.locator("img")).toHaveAttribute("src", "https://example.com/x.png");
+
+  await page.getByRole("button", { name: "Actions for e2e Garden" }).click();
+  await page.getByRole("menuitem", { name: "Picture…" }).click();
+  // Mantine's file input is a button over a hidden input.
+  const chooser = page.waitForEvent("filechooser");
+  await dialog.getByLabel("Upload").click();
+  await (await chooser).setFiles({ name: "x.png", mimeType: "image/png", buffer: PNG });
+  await dialog.getByRole("button", { name: "Save" }).click();
+  await expect(tile.locator("img")).toHaveAttribute("src", /\/storage\/v1\/object\/sign\/images\//);
+  await expect
+    .poll(() => tile.locator("img").evaluate((img: HTMLImageElement) => img.naturalWidth))
+    .toBe(1);
+  const path = (
+    (await (
+      await request.get(`${REST}/boards?id=eq.${id}&select=image`, {
+        headers: restHeaders(session),
+      })
+    ).json()) as { image: string }[]
+  )[0].image;
+  expect(path).toMatch(new RegExp(`^${session.user.id}/`));
+
+  // The file is private: the token is the only way in for a reader, and only while the board is shared.
+  const reader = await browser.newContext();
+  const guest = await reader.newPage();
+  const bare = await guest.request.get(
+    `${process.env.VITE_SUPABASE_URL}/storage/v1/object/public/images/${path}`,
+  );
+  expect(bare.status()).toBe(400);
+  const shared = await request.post(`${REST}/rpc/share_board`, {
+    headers: restHeaders(session),
+    data: { board_id: id },
+  });
+  const token = ((await shared.json()) as { share_token: string }[])[0].share_token;
+  await guest.goto(`/s/${token}`);
+  await expect(guest.getByRole("heading", { name: "e2e Garden" })).toBeVisible();
+  await expect
+    .poll(() => guest.locator("img").evaluate((img: HTMLImageElement) => img.naturalWidth))
+    .toBe(1);
+  const unshared = await request.post(`${REST}/rpc/unshare_board`, {
+    headers: restHeaders(session),
+    data: { board_id: id },
+  });
+  expect(unshared.ok()).toBe(true);
+  expect((await guest.request.get(`${API}/image?token=${token}`)).status()).toBe(404);
+  await reader.close();
+
+  await page.getByRole("button", { name: "Actions for e2e Garden" }).click();
+  await page.getByRole("menuitem", { name: "Picture…" }).click();
+  await dialog.getByRole("button", { name: "Remove" }).click();
+  await expect(tile.locator("img")).toHaveCount(0);
+  await expect
+    .poll(async () => (await admin().storage.from("images").list(session.user.id)).data?.length)
+    .toBe(0);
 });
 
 test("renders an HTML board in a sandbox", async ({ page, request }) => {

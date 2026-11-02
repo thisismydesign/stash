@@ -22,17 +22,32 @@ export interface Board {
   archived_at: string | null;
   /** Set by `share_board`, cleared by `unshare_board`; anyone with it may read the board. */
   share_token: string | null;
+  /** An https link, or the path of a file in the `images` bucket under the owner's folder. */
+  image: string | null;
   created_at: string;
   updated_at: string;
 }
 
 /** What a caller sends to make or change a board; the database fills the rest. */
 export type BoardInput = Partial<
-  Pick<Board, "title" | "kind" | "content" | "tags" | "pinned" | "archived_at">
+  Pick<Board, "title" | "kind" | "content" | "tags" | "pinned" | "archived_at" | "image">
 >;
 
 /** What `shared_board(token)` returns: the board as its readers see it. */
-export type SharedBoard = Pick<Board, "id" | "title" | "kind" | "content" | "tags" | "updated_at">;
+export type SharedBoard = Pick<
+  Board,
+  "id" | "title" | "kind" | "content" | "tags" | "image" | "updated_at"
+>;
+
+/** The private bucket pictures are uploaded to; its limits mirror the bucket row. */
+export const IMAGE_BUCKET = "images";
+export const IMAGE_TYPES = ["image/png", "image/jpeg", "image/gif", "image/webp", "image/avif"];
+export const IMAGE_MAX_BYTES = 5 * 1024 * 1024;
+
+/** A link is fetched as it is; anything else is a path in the bucket, served by signed URL. */
+export const isImageLink = (image: string) => image.startsWith("https://");
+/** Mirrors the check on `boards.image`. */
+export const IMAGE_MAX_LENGTH = 2048;
 
 /** The app's address for a shared board. */
 export const shareLink = (site: string, token: string) => `${site.replace(/\/$/, "")}/s/${token}`;

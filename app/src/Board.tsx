@@ -18,6 +18,7 @@ import type { Board, BoardKind, SharedBoard } from "@shared/tables.ts";
 import { BoardMenu } from "./BoardMenu.tsx";
 import { KindIcon, TagBadges, cleanTags, unique } from "./Boards.tsx";
 import { HtmlView } from "./components/HtmlView.tsx";
+import { Picture } from "./components/Picture.tsx";
 import { Markdown } from "./components/Markdown.tsx";
 import { useBoards } from "./lib/boards.tsx";
 import { ago } from "./lib/format.ts";
@@ -99,7 +100,7 @@ function Editor({
 }
 
 export function BoardPage({ id, onBack }: { id: string; onBack: () => void }) {
-  const { boards, update } = useBoards();
+  const { boards, update, pictureSrc } = useBoards();
   const board = boards?.find((b) => b.id === id);
   const [draft, setDraft] = useState<Draft | null>(null);
   const [busy, setBusy] = useState(false);
@@ -242,7 +243,10 @@ export function BoardPage({ id, onBack }: { id: string; onBack: () => void }) {
       {draft ? (
         <Editor draft={draft} kind={board.kind} tags={tags} onChange={setDraft} />
       ) : (
-        <BoardContent board={board} onToggle={toggle} />
+        <>
+          {board.image && <Picture src={pictureSrc(board.image)} height={200} radius="md" />}
+          <BoardContent board={board} onToggle={toggle} />
+        </>
       )}
     </Stack>
   );

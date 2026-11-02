@@ -1,4 +1,4 @@
-// Public: agent docs, sign-up and agent-key exchange. Boards themselves go through PostgREST with a session.
+// Public: agent docs, sign-up, agent-key exchange and a shared board's picture. Boards themselves go through PostgREST with a session.
 
 import { createClient } from "npm:@supabase/supabase-js@2";
 import {
@@ -8,8 +8,9 @@ import {
   type SignUpResponse,
 } from "../../../shared/api.ts";
 import { KEY_PREFIX, randomToken, sha256Hex } from "../../../shared/keys.ts";
+import { IMAGE_BUCKET, isImageLink } from "../../../shared/tables.ts";
 import { db, PUBLISHABLE_KEY, SECRET_KEY, SUPABASE_URL } from "../_shared/db.ts";
-import { CORS, json, text } from "../_shared/http.ts";
+import { CORS, json, redirect, text } from "../_shared/http.ts";
 import { HOUR_MS, throttled } from "../_shared/throttle.ts";
 import { agentInstructions, endpoints, openapi, type Endpoints } from "./docs.ts";
 
@@ -113,6 +114,26 @@ async function signUp(body: Partial<SignUpRequest>, api: Endpoints, ip: string) 
   }
 }
 
+// Long enough for a page to load; an unshared board's picture outlives the link by at most this. Like shared_board, unthrottled: the token is the secret.
+const IMAGE_URL_SECONDS = 3600;
+
+// Files only: a link the page fetches itself, and a redirect to any address would lend the host's name to it.
+async function sharedImage(token: string) {
+  const { data, error } = await db
+    .from("boards")
+    .select("image")
+    .eq("share_token", token)
+    .maybeSingle();
+  if (error) throw new Error(error.message);
+  const image = (data as { image: string | null } | null)?.image;
+  if (!image || isImageLink(image)) return json({ error: "Not found." }, 404);
+  const signed = await db.storage.from(IMAGE_BUCKET).createSignedUrl(image, IMAGE_URL_SECONDS);
+  if (signed.error) return json({ error: "Not found." }, 404);
+  // Signed from inside the stack; the reader fetches through the gateway.
+  const url = new URL(signed.data.signedUrl);
+  return redirect(`${PUBLIC_URL}${url.pathname}${url.search}`);
+}
+
 type RestSpec = { paths?: Record<string, unknown>; definitions?: Record<string, unknown> };
 
 // The schema changes only with a migration, and every deploy starts fresh instances; the TTL covers migrations pushed on their own.
@@ -198,6 +219,8 @@ Deno.serve(async (request) => {
     }
     if (route === "/token" && method === "POST")
       return await exchangeAgentKey(request, api, clientIp(request));
+    if (route === "/image" && method === "GET")
+      return await sharedImage(url.searchParams.get("token") ?? "");
     return json({ error: "Not found." }, 404);
   } catch (e) {
     return json({ error: (e as Error).message }, 500);

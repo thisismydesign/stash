@@ -32,6 +32,7 @@ import {
 import { useMemo, useState } from "react";
 import { BOARD_KINDS, type Board, type BoardKind } from "@shared/tables.ts";
 import { BoardMenu } from "./BoardMenu.tsx";
+import { Picture } from "./components/Picture.tsx";
 import { Setting, SettingsMenu } from "./components/Settings.tsx";
 import { useBoards } from "./lib/boards.tsx";
 import { ago } from "./lib/format.ts";
@@ -103,6 +104,7 @@ type ListProps = {
 };
 
 function Tile({ board, color, onOpen, onError }: Omit<ListProps, "boards"> & { board: Board }) {
+  const { pictureSrc } = useBoards();
   const p = preview(board);
   return (
     <Card withBorder padding="md" pos="relative" style={{ display: "flex" }}>
@@ -111,6 +113,11 @@ function Tile({ board, color, onOpen, onError }: Omit<ListProps, "boards"> & { b
         style={{ flex: 1, display: "flex", flexDirection: "column" }}
       >
         <Stack gap="xs" style={{ flex: 1 }}>
+          {board.image && (
+            <div style={{ margin: "calc(var(--card-padding) * -1)", marginBottom: 0 }}>
+              <Picture src={pictureSrc(board.image)} height={120} />
+            </div>
+          )}
           <Group gap={6} wrap="nowrap" pr={28}>
             <KindIcon kind={board.kind} />
             <Text fw={600} lineClamp={1}>
