@@ -33,7 +33,7 @@ A Markdown task list. Tick an item and it moves under *Done*; untick it and it c
 
 ### Markdown
 
-Free-form notes, rendered. Edit the source in place.
+Free-form notes, rendered. Edit them as you see them, or switch to the Markdown source.
 
 <p>
   <img src="docs/screenshots/markdown.png" alt="A Markdown board" width="300">
