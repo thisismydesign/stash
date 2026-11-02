@@ -52,7 +52,7 @@ A board's menu shares it: a link that shows the board, read-only, to anyone who 
 
 ## Agents
 
-An agent reads and writes every board through the REST API with an agent key you make under *Agent keys*. The instructions it needs are served at `/llms.txt`.
+An agent can sign you up, then reads and writes every board through the REST API with an agent key you make under *Agent keys*. The instructions it needs are served at `/llms.txt`.
 
 ## Running it
 

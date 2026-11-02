@@ -1,7 +1,13 @@
-// Public: agent docs and agent-key exchange. Boards themselves go through PostgREST with a session.
+// Public: agent docs, sign-up and agent-key exchange. Boards themselves go through PostgREST with a session.
 
 import { createClient } from "npm:@supabase/supabase-js@2";
-import { KEY_PREFIX, sha256Hex } from "../../../shared/keys.ts";
+import {
+  type ApiSession,
+  MIN_PASSWORD_LENGTH,
+  type SignUpRequest,
+  type SignUpResponse,
+} from "../../../shared/api.ts";
+import { KEY_PREFIX, randomToken, sha256Hex } from "../../../shared/keys.ts";
 import { db, PUBLISHABLE_KEY, SECRET_KEY, SUPABASE_URL } from "../_shared/db.ts";
 import { CORS, json, text } from "../_shared/http.ts";
 import { HOUR_MS, throttled } from "../_shared/throttle.ts";
@@ -22,7 +28,7 @@ const clientIp = (request: Request) =>
   request.headers.get("x-forwarded-for")?.split(",")[0].trim() ??
   "unknown";
 
-async function mintSession(email: string) {
+async function mintSession(email: string): Promise<ApiSession> {
   const link = await db.auth.admin.generateLink({ type: "magiclink", email });
   if (link.error) throw new Error(link.error.message);
   const anon = createClient(SUPABASE_URL, PUBLISHABLE_KEY, { auth: { persistSession: false } });
@@ -60,6 +66,51 @@ async function exchangeAgentKey(request: Request, api: Endpoints, ip: string) {
     .update({ last_used_at: new Date().toISOString() })
     .eq("id", found.data.id);
   return json({ session, api: endpoints(api) });
+}
+
+// A few accounts an hour per address suffices for a person and their agent, and starves anyone flooding the user table.
+const SIGNUP_LIMIT = { max: 5, perMs: HOUR_MS };
+
+// New accounts only: an existing email never yields a session to an anonymous caller.
+async function signUp(body: Partial<SignUpRequest>, api: Endpoints, ip: string) {
+  const email = typeof body.email === "string" ? body.email.trim().toLowerCase() : "";
+  if (!/^[^@\s]+@[^@\s]+\.[^@\s]+$/.test(email))
+    return json({ error: "A valid email is required." }, 400);
+  const chosen = body.password;
+  if (chosen !== undefined && (typeof chosen !== "string" || chosen.length < MIN_PASSWORD_LENGTH))
+    return json({ error: `The password needs at least ${MIN_PASSWORD_LENGTH} characters.` }, 400);
+  if (await throttled(ip, "signup", SIGNUP_LIMIT))
+    return json({ error: "Too many sign-ups from this address. Try again in an hour." }, 429);
+  const password = chosen ?? randomToken(18);
+  const { data: created, error } = await db.auth.admin.createUser({
+    email,
+    password,
+    email_confirm: true,
+  });
+  if (error || !created.user) {
+    if (error?.code === "email_exists")
+      return json({ error: "This email already has an account. Sign in instead." }, 409);
+    // Auth answers 422 to a password it will not take.
+    return json(
+      { error: error?.message ?? "Could not create the account." },
+      error?.status === 422 ? 400 : 500,
+    );
+  }
+  try {
+    return json(
+      {
+        email,
+        ...(chosen ? {} : { password }),
+        session: await mintSession(email),
+        api: endpoints(api),
+      } satisfies SignUpResponse,
+      201,
+    );
+  } catch (e) {
+    // The caller never saw the credentials, so a half-made account would lock the email out of retrying.
+    await db.auth.admin.deleteUser(created.user.id).catch(() => {});
+    throw e;
+  }
 }
 
 type RestSpec = { paths?: Record<string, unknown>; definitions?: Record<string, unknown> };
@@ -141,6 +192,10 @@ Deno.serve(async (request) => {
       return text(await agentInstructions(api), "text/markdown; charset=utf-8");
     if (route === "/openapi.json" && method === "GET") return json(openapi(api));
     if (route === "/rest-openapi.json" && method === "GET") return json(await restOpenapi(api));
+    if (route === "/signup" && method === "POST") {
+      const body = ((await request.json().catch(() => ({}))) ?? {}) as Partial<SignUpRequest>;
+      return await signUp(body, api, clientIp(request));
+    }
     if (route === "/token" && method === "POST")
       return await exchangeAgentKey(request, api, clientIp(request));
     return json({ error: "Not found." }, 404);

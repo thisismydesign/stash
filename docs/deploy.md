@@ -6,8 +6,8 @@ Stash runs on Supabase (database, auth, Edge Function) and a Cloudflare Worker (
 
 1. Fill in `.env` from `.env.example`.
 2. `pnpm run supabase:deploy` applies the migrations and deploys the function.
-3. Auth settings SHOULD match `[auth]` in `supabase/config.toml`: sign-ups off, email provider on, minimum password length 8. Stash sends no email.
-4. Create your account under Authentication → Users (email, password, confirmed). Stash has no sign-up: it is yours.
+3. Auth settings SHOULD match `[auth]` in `supabase/config.toml`: sign-ups off (the function creates accounts), email provider on, minimum password length 8. Stash sends no email.
+4. Sign up in the app, or have your agent do it. Auth's own sign-up stays off: the function creates accounts, so its throttle covers them.
 
 ### Self-hosted
 

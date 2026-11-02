@@ -20,10 +20,10 @@ test("shows a visitor the example boards and offers to sign in", async ({ page }
   await page.getByRole("checkbox").first().click();
   await expect(ticked).toHaveCount(3);
   expect(sent).toEqual([]);
-  await page.getByRole("button", { name: "Sign in to keep your own." }).click();
+  await page.getByRole("button", { name: "Sign up to keep your own." }).click();
   const dialog = page.getByRole("dialog");
-  await expect(dialog.getByRole("heading", { name: "Sign in to Stash" })).toBeVisible();
-  await expect(dialog.getByRole("button", { name: "Sign in" })).toBeVisible();
+  await expect(dialog.getByRole("heading", { name: "Sign up for Stash" })).toBeVisible();
+  await expect(dialog.getByRole("button", { name: "Create account" })).toBeVisible();
 });
 
 test("serves the agent instructions and the API descriptions", async ({ request }) => {
@@ -33,7 +33,9 @@ test("serves the agent instructions and the API descriptions", async ({ request 
   expect(await instructions.text()).toContain("# Stash for agents");
   const openapi = await request.get(`${API}/openapi.json`, { headers });
   expect(openapi.ok()).toBe(true);
-  expect((await openapi.json()).paths["/token"]).toBeTruthy();
+  expect(Object.keys((await openapi.json()).paths)).toEqual(
+    expect.arrayContaining(["/signup", "/token"]),
+  );
   const rest = await request.get(`${API}/rest-openapi.json`, { headers });
   expect(rest.ok()).toBe(true);
   expect(Object.keys((await rest.json()).paths).sort()).toEqual([

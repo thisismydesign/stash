@@ -29,7 +29,7 @@ Purpose: the stack and the principles every change MUST respect. Intent, not imp
 ### Lean on Supabase
 
 - Auth, PostgREST, RLS and generated OpenAPI before custom code.
-- Edge Functions only for what those cannot do: agent docs and key exchange.
+- Edge Functions only for what those cannot do: agent docs, sign-up and key exchange. Auth's own sign-up stays off so the function's throttle covers every new account, and an agent can make one without a password of its own.
 
 ### One contract between app and backend
 

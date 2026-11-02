@@ -1,3 +1,4 @@
+import { MIN_PASSWORD_LENGTH } from "../../../shared/api.ts";
 import { shareLink } from "../../../shared/tables.ts";
 import template from "./agent.ts";
 
@@ -15,6 +16,7 @@ export type Endpoints = {
 };
 
 export const endpoints = (e: Endpoints) => ({
+  signup: `${e.base}/signup`,
   token: `${e.base}/token`,
   tokenRefresh: `${e.supabase}/auth/v1/token?grant_type=refresh_token`,
   rest: `${e.supabase}/rest/v1`,
@@ -73,6 +75,60 @@ export function openapi(e: Endpoints) {
       schemas: { Session: session },
     },
     paths: {
+      "/signup": {
+        post: {
+          summary: "Create an account with an email and a password",
+          requestBody: {
+            required: true,
+            content: {
+              "application/json": {
+                schema: {
+                  type: "object",
+                  properties: {
+                    email: { type: "string", format: "email" },
+                    password: {
+                      type: "string",
+                      minLength: MIN_PASSWORD_LENGTH,
+                      description:
+                        "The user's choice. Leave it out and Stash makes one, returned once in the response.",
+                    },
+                  },
+                  required: ["email"],
+                },
+              },
+            },
+          },
+          responses: {
+            "201": {
+              description:
+                "Account created: a session for the agent. The user signs in on the site with the email and password.",
+              content: {
+                "application/json": {
+                  schema: {
+                    type: "object",
+                    properties: {
+                      email: { type: "string" },
+                      password: {
+                        type: "string",
+                        description:
+                          "Only when Stash made it. Give it to the user; it is not shown again.",
+                      },
+                      session,
+                      api: { type: "object", description: "Every endpoint the agent needs" },
+                    },
+                  },
+                },
+              },
+            },
+            "400": { description: "No valid email, or a password that is too short" },
+            "409": {
+              description:
+                "The email already has an account: the user signs in on the site and can make an agent key there",
+            },
+            "429": { description: "Too many sign-ups from this address" },
+          },
+        },
+      },
       "/token": {
         post: {
           summary: "Exchange an agent key for a session",

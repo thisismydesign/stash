@@ -13,7 +13,7 @@ Personal notepad: boards of notes, lists and ideas, kept by the owner and their 
 ```
 app/                     web app; app/wrangler.jsonc deploys app/dist and worker.ts, which serves /llms.txt
 shared/                  the app–backend contract; see docs/technical.md
-supabase/functions/      stash (public API: agent docs, key exchange), _shared
+supabase/functions/      stash (public API: agent docs, sign-up, key exchange), _shared
 supabase/migrations/     schema, policies, grants
 supabase/seed/           local data: the dev account (its boards from app/src/lib/demo)
 lint/                    custom ESLint rules; each file is on as an error

@@ -37,10 +37,18 @@ export async function testSession(): Promise<Session> {
   return otp.data.session;
 }
 
-/** Local runs all come from one address; clear its budget so repeated runs stay inside the rate limit. */
+/** Local runs all come from one address; clear its budgets so repeated runs stay inside the rate limits. */
 export async function resetThrottle() {
   if (process.env.E2E_BASE_URL || !canSignIn) return;
-  await admin().from("throttle").delete().eq("route", "token");
+  await admin().from("throttle").delete().in("route", ["token", "signup"]);
+}
+
+export async function deleteUser(email: string) {
+  const db = admin();
+  const { data, error } = await db.auth.admin.listUsers({ perPage: 1000 });
+  if (error) throw error;
+  const user = data.users.find((u) => u.email === email);
+  if (user) await db.auth.admin.deleteUser(user.id);
 }
 
 export async function signIn(page: Page): Promise<Session> {

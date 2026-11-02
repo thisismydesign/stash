@@ -26,7 +26,7 @@ A board is one row in \`boards\`: \`title\`, \`kind\`, \`content\`, \`tags\`, \`
 
 - If the user gave you an agent key (they make them under Agent keys in their profile menu), exchange it for a session at \`POST {{token}}\` with header \`Authorization: Bearer <key>\`.
 - If you stored a refresh token earlier, refresh the session: \`POST {{tokenRefresh}}\` with header \`apikey: {{publishableKey}}\` and JSON \`{"refresh_token"}\`. Each refresh returns a new refresh token; store it.
-- Stash has no sign-up. The user creates their account and their keys in the app.
+- Otherwise, sign the user up: ask for their email and whether they want to choose a password or have Stash make one, then \`POST {{signup}}\` with JSON \`{"email", "password"}\`; leave \`password\` out for Stash to make one, returned once in the response. Store the refresh token durably and tell the user where. Give the user their email and password for signing in on the site; there is no reset by email, so they should keep it in a password manager, and can change it under Settings → Password.
 
 ## API
 

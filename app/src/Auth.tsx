@@ -8,6 +8,7 @@ import {
   Modal,
   Paper,
   PasswordInput,
+  SegmentedControl,
   Stack,
   Tabs,
   Text,
@@ -16,29 +17,37 @@ import {
 } from "@mantine/core";
 import { IconUserCheck } from "@tabler/icons-react";
 import { useEffect, useState } from "react";
+import { MIN_PASSWORD_LENGTH } from "@shared/api.ts";
 import { AgentKeys } from "./AgentKeys.tsx";
 import { Logo } from "./Logo.tsx";
-import { signInAsDevAccount, supabase, useSession } from "./lib/supabase.ts";
+import { signInAsDevAccount, signUp, supabase, useSession } from "./lib/supabase.ts";
 
-/** No reset by email, so a new one must be worth keeping. */
-const MIN_PASSWORD_LENGTH = 8;
+const AUTH_MODES = [
+  { value: "signin", label: "Sign in" },
+  { value: "signup", label: "Sign up" },
+] as const;
+type AuthMode = (typeof AUTH_MODES)[number]["value"];
 
-/** Asks the header's Sign in button to open. */
+/** Asks the header's Sign in button to open, in the mode given as `detail`. */
 const OPEN_SIGN_IN = "stash:sign-in";
 
-function PasswordForm() {
+function PasswordForm({ mode }: { mode: AuthMode }) {
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
   const [error, setError] = useState<string>();
   const [busy, setBusy] = useState(false);
+  const signup = mode === "signup";
   // Locally, signing in with both fields empty means the dev account.
-  const devAccount = import.meta.env.DEV && !email && !password;
+  const devAccount = import.meta.env.DEV && !signup && !email && !password;
   const ready = devAccount || (!!email && !!password);
   const submit = async () => {
+    if (signup && password.length < MIN_PASSWORD_LENGTH)
+      return setError(`The password needs at least ${MIN_PASSWORD_LENGTH} characters.`);
     setError(undefined);
     setBusy(true);
     try {
       if (devAccount) await signInAsDevAccount();
+      else if (signup) await signUp(email, password);
       else {
         const { error } = await supabase!.auth.signInWithPassword({ email, password });
         if (error) throw error;
@@ -63,14 +72,14 @@ function PasswordForm() {
           name="email"
           autoComplete="email"
           inputMode="email"
-          placeholder={import.meta.env.DEV ? "Empty for the dev account" : undefined}
+          placeholder={import.meta.env.DEV && !signup ? "Empty for the dev account" : undefined}
           value={email}
           onChange={(e) => setEmail(e.currentTarget.value)}
         />
         <PasswordInput
           label="Password"
           name="password"
-          autoComplete="current-password"
+          autoComplete={signup ? "new-password" : "current-password"}
           value={password}
           onChange={(e) => setPassword(e.currentTarget.value)}
         />
@@ -80,7 +89,7 @@ function PasswordForm() {
           </Text>
         )}
         <Button type="submit" loading={busy} disabled={!ready} mt="xs">
-          Sign in
+          {signup ? "Create account" : "Sign in"}
         </Button>
       </Stack>
     </form>
@@ -113,9 +122,9 @@ export function ExampleNotice() {
         <Anchor
           component="button"
           size="sm"
-          onClick={() => window.dispatchEvent(new Event(OPEN_SIGN_IN))}
+          onClick={() => window.dispatchEvent(new CustomEvent(OPEN_SIGN_IN, { detail: "signup" }))}
         >
-          Sign in to keep your own.
+          Sign up to keep your own.
         </Anchor>
       </Text>
     </Alert>
@@ -124,23 +133,37 @@ export function ExampleNotice() {
 
 function SignInButton() {
   const [opened, setOpened] = useState(false);
+  const [mode, setMode] = useState<AuthMode>("signin");
+  const open = (as: AuthMode) => {
+    setMode(as);
+    setOpened(true);
+  };
   useEffect(() => {
-    const open = () => setOpened(true);
-    window.addEventListener(OPEN_SIGN_IN, open);
-    return () => window.removeEventListener(OPEN_SIGN_IN, open);
+    const onOpen = (e: Event) => open((e as CustomEvent<AuthMode>).detail ?? "signin");
+    window.addEventListener(OPEN_SIGN_IN, onOpen);
+    return () => window.removeEventListener(OPEN_SIGN_IN, onOpen);
   }, []);
   return (
     <>
-      <Button variant="default" size="xs" onClick={() => setOpened(true)}>
+      <Button variant="default" size="xs" onClick={() => open("signin")}>
         Sign in
       </Button>
       <Modal
         opened={opened}
         onClose={() => setOpened(false)}
-        title={<Text fw={700}>Sign in to Stash</Text>}
+        title={<Text fw={700}>{mode === "signup" ? "Sign up for Stash" : "Sign in to Stash"}</Text>}
         size="xs"
       >
-        <PasswordForm />
+        <Stack gap="sm">
+          <SegmentedControl
+            fullWidth
+            size="xs"
+            value={mode}
+            onChange={(v) => setMode(v as AuthMode)}
+            data={[...AUTH_MODES]}
+          />
+          <PasswordForm key={mode} mode={mode} />
+        </Stack>
       </Modal>
     </>
   );
