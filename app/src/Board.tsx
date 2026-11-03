@@ -30,6 +30,8 @@ import { KIND_COLOR, KIND_LABEL, tagColors } from "./theme.ts";
 
 type Draft = { title: string; tags: string[]; content: string };
 
+const AUTOSAVE_MS = 800;
+
 const PLACEHOLDER: Record<BoardKind, string> = {
   todo: "- [ ] First thing\n- [ ] Second thing\n  - [ ] A step of it",
   markdown: "# Notes\n\nAnything, in Markdown.",
@@ -69,6 +71,12 @@ const draftOf = (board: Board): Draft => ({
 });
 
 type View = "formatted" | "source";
+
+const inputOf = (draft: Draft, board: Board) => ({
+  title: draft.title.trim() || board.title,
+  tags: cleanTags(draft.tags),
+  content: draft.content,
+});
 
 function Editor({
   draft,
@@ -132,13 +140,52 @@ export function BoardPage({ id, onBack }: { id: string; onBack: () => void }) {
   const [draft, setDraft] = useState<Draft | null>(null);
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState<string>();
+  const [saving, setSaving] = useState(0);
   const opened = useRef<string>(undefined);
+  // Only typing is saved: a draft left untouched must not overwrite what someone else wrote meanwhile.
+  const written = useRef<Draft>(undefined);
+  const dirty = !!draft && draft !== written.current;
+  const edit = (board: Board) => {
+    written.current = draftOf(board);
+    setDraft(written.current);
+  };
+
+  const autosave = useRef<() => void>(undefined);
+  autosave.current = async () => {
+    if (!draft || !board || draft === written.current) return;
+    written.current = draft;
+    setSaving((n) => n + 1);
+    setError(undefined);
+    try {
+      await update(board.id, inputOf(draft, board));
+    } catch (e) {
+      if (written.current === draft) written.current = undefined;
+      setError((e as Error).message);
+    } finally {
+      setSaving((n) => n - 1);
+    }
+  };
+
+  useEffect(() => {
+    if (!draft) return;
+    const timer = setTimeout(() => autosave.current?.(), AUTOSAVE_MS);
+    return () => clearTimeout(timer);
+  }, [draft]);
+
+  useEffect(() => () => autosave.current?.(), []);
+
+  useEffect(() => {
+    if (!dirty && saving === 0) return;
+    const warn = (e: BeforeUnloadEvent) => e.preventDefault();
+    window.addEventListener("beforeunload", warn);
+    return () => window.removeEventListener("beforeunload", warn);
+  }, [dirty, saving]);
 
   // A board with nothing on it yet opens ready to write.
   useEffect(() => {
     if (!board || opened.current === board.id) return;
     opened.current = board.id;
-    if (board.content === "") setDraft(draftOf(board));
+    if (board.content === "") edit(board);
   }, [board]);
 
   if (!boards)
@@ -176,11 +223,7 @@ export function BoardPage({ id, onBack }: { id: string; onBack: () => void }) {
   const save = () =>
     draft &&
     run(async () => {
-      await update(board.id, {
-        title: draft.title.trim() || board.title,
-        tags: cleanTags(draft.tags),
-        content: draft.content,
-      });
+      await update(board.id, inputOf(draft, board));
       setDraft(null);
     });
   const toggle = (line: number) => {
@@ -221,11 +264,13 @@ export function BoardPage({ id, onBack }: { id: string; onBack: () => void }) {
         <Group gap="xs" wrap="nowrap">
           {draft ? (
             <>
-              <Button variant="default" size="sm" onClick={() => setDraft(null)} disabled={busy}>
-                Cancel
-              </Button>
+              {!error && (
+                <Text size="xs" c="dimmed">
+                  {dirty || saving > 0 ? "Saving…" : "Saved"}
+                </Text>
+              )}
               <Button size="sm" onClick={() => void save()} loading={busy}>
-                Save
+                Done
               </Button>
             </>
           ) : (
@@ -233,7 +278,7 @@ export function BoardPage({ id, onBack }: { id: string; onBack: () => void }) {
               variant="default"
               size="sm"
               leftSection={<IconPencil size={16} />}
-              onClick={() => setDraft(draftOf(board))}
+              onClick={() => edit(board)}
             >
               Edit
             </Button>

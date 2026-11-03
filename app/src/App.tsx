@@ -41,7 +41,7 @@ export function useRoute(): Route {
 }
 
 export function Stash({ route }: { route: Route }) {
-  if (route.page === "board") return <BoardPage id={route.id} onBack={go.home} />;
+  if (route.page === "board") return <BoardPage key={route.id} id={route.id} onBack={go.home} />;
   if (route.page === "shared") return <SharedBoardPage token={route.token} onBack={go.home} />;
   return <BoardsPage onOpen={go.board} />;
 }

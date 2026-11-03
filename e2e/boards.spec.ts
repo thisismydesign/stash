@@ -142,8 +142,11 @@ test("ticks a task under Done and brings it back", async ({ page, request }) => 
     .toBe("- [ ] Visa\n- [ ] Bike\n  - [ ] Helmet\n- [ ] Pillow\n\n## Done\n\n");
 });
 
-test("makes a board, writes it formatted and as source, and deletes it", async ({ page }) => {
-  await signIn(page);
+test("makes a board, writes it formatted and as source, and deletes it", async ({
+  page,
+  request,
+}) => {
+  const session = await signIn(page);
   await page.goto("/");
   await page.getByRole("button", { name: "New board" }).click();
   await page.getByLabel("Title").fill("e2e Fresh");
@@ -151,6 +154,8 @@ test("makes a board, writes it formatted and as source, and deletes it", async (
   await page.getByRole("combobox", { name: "Tags" }).fill("e2e Ideas");
   await page.keyboard.press("Enter");
   await page.getByRole("button", { name: "Create" }).click();
+  await page.waitForURL(/\/b\//);
+  const id = page.url().split("/").pop()!;
   // A Markdown board opens formatted: what is typed shows rendered, and the source is Markdown.
   const editor = page.getByLabel("Content");
   await expect(editor).toBeVisible();
@@ -162,7 +167,11 @@ test("makes a board, writes it formatted and as source, and deletes it", async (
   await editor.fill("# Hello\n\nA [link](https://example.com).");
   await page.getByText("Formatted", { exact: true }).click();
   await expect(editor.getByRole("link", { name: "link" })).toBeVisible();
-  await page.getByRole("button", { name: "Save" }).click();
+  await expect
+    .poll(() => content(request, session, id))
+    .toBe("# Hello\n\nA [link](https://example.com).");
+  await expect(page.getByText("Saved", { exact: true })).toBeVisible();
+  await page.getByRole("button", { name: "Done" }).click();
   await expect(page.getByRole("heading", { name: "Hello" })).toBeVisible();
   await expect(page.getByRole("link", { name: "link" })).toHaveAttribute("target", "_blank");
   await expect(page.getByText("e2e ideas")).toBeVisible();
@@ -171,6 +180,13 @@ test("makes a board, writes it formatted and as source, and deletes it", async (
   await page.getByLabel("Title").fill("e2e Renamed");
   await page.keyboard.press("ControlOrMeta+s");
   await expect(page.getByRole("heading", { name: "e2e Renamed" })).toBeVisible();
+
+  await page.getByRole("button", { name: "Edit" }).click();
+  await page.getByText("Source", { exact: true }).click();
+  await page.getByLabel("Content").fill("# Left mid-edit");
+  await page.getByRole("main").getByRole("button", { name: "All boards" }).click();
+  await expect.poll(() => content(request, session, id)).toBe("# Left mid-edit");
+  await page.getByRole("button", { name: /^e2e Renamed/ }).click();
 
   await page.getByRole("button", { name: "Actions for e2e Renamed" }).click();
   await page.getByRole("menuitem", { name: "Delete" }).click();
@@ -201,7 +217,7 @@ test("builds a table with the editor's table tools", async ({ page, request }) =
   // Rows and columns go next to the cell the cursor is in.
   await page.getByRole("button", { name: "Add column after" }).click();
   await page.getByRole("button", { name: "Add row after" }).click();
-  await page.getByRole("button", { name: "Save" }).click();
+  await page.getByRole("button", { name: "Done" }).click();
   await expect(page.getByRole("table")).toBeVisible();
   await expect
     .poll(() => content(request, session, id))
