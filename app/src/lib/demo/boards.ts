@@ -4,6 +4,7 @@
 import type { Board, Cell, Column } from "../../../../shared/tables.ts";
 
 export type ExampleBoard = Pick<Board, "title" | "kind" | "content" | "tags" | "pinned"> & {
+  description?: string;
   columns?: Board["columns"];
   rows?: Record<string, Cell>[];
 };
@@ -57,6 +58,8 @@ export const exampleBoards = (file: (name: string) => string): ExampleBoard[] =>
     tags: ["money", "taxes"],
     pinned: false,
     content: "",
+    description:
+      "Every invoice and receipt of the year. Money out is **negative**; tick *Deductible* when the accountant may use it.",
     columns: TRANSACTION_COLUMNS,
     rows: [
       transaction("2026-01-05", "Domain renewal", -14.99, "EUR", "Software", true),

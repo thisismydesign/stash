@@ -11,9 +11,13 @@ import {
   Text,
   TextInput,
 } from "@mantine/core";
-import { IconPlus, IconTrash } from "@tabler/icons-react";
+import { IconGripVertical, IconPlus, IconTrash } from "@tabler/icons-react";
 import { useRef, useState } from "react";
 import { COLUMN_TYPES, columnKey, type Column, type ColumnType } from "@shared/tables.ts";
+import { moveItem } from "../lib/table.ts";
+import { useDragOrder } from "../lib/useDragOrder.ts";
+
+import "./columns-editor.css";
 
 const TYPE_LABEL: Record<ColumnType, string> = {
   text: "Text",
@@ -33,6 +37,7 @@ export function ColumnsEditor({
   onChange: (columns: Column[]) => void;
 }) {
   const fresh = useRef(new Set<string>());
+  const dragging = useDragOrder("y", (from, to) => onChange(moveItem(columns, from, to)));
   // The column whose removal awaits a yes; a fresh one has no cells to lose and goes at once.
   const [removing, setRemoving] = useState<number>();
   const drop = (i: number) => {
@@ -67,14 +72,24 @@ export function ColumnsEditor({
     onChange([...columns, { key, name: "", type: "text" }]);
   };
   return (
-    <Stack gap="xs">
+    <Stack gap="xs" className="columns-editor">
       <Text size="sm" fw={500}>
         Columns
       </Text>
       {columns.map((c, i) => (
-        <Paper key={i} withBorder p="xs">
+        <Paper key={i} withBorder p="xs" ref={dragging.item(i)} className={dragging.className(i)}>
           <Stack gap="xs">
             <Group gap="xs" wrap="nowrap" align="flex-end">
+              <ActionIcon
+                variant="subtle"
+                color="gray"
+                size="input-xs"
+                className="columns-grip"
+                aria-label={`Move column ${c.name || c.key}`}
+                {...dragging.handle(i)}
+              >
+                <IconGripVertical size={16} />
+              </ActionIcon>
               <TextInput
                 label="Name"
                 size="xs"

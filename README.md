@@ -8,7 +8,7 @@ Tell your agent what is on your mind; it files it on the right board. Open Stash
 
 ## Boards
 
-A board has a title and colour-coded tags. Pinned boards sit on top; archived ones stay out of the way until asked for. The view, the tag filter and the archive switch live behind one button beside the search.
+A board has a title, colour-coded tags and, if you like, a line or two of Markdown about it. Pinned boards sit on top; archived ones stay out of the way until asked for. The view, the tag filter and the archive switch live behind one button beside the search.
 
 <p>
   <img src="docs/screenshots/boards.png" alt="Boards as tiles" width="300">
@@ -52,7 +52,7 @@ A page of your own, rendered in a sandbox: mood boards, comparisons, anything wi
 
 ### Table
 
-Records with typed columns: text, number, date, checkbox, choice or link. Tap a cell to change it, a heading to sort, drag a heading's edge to widen it, filter by text, choice, checkbox or date range, and the numbers add up at the bottom. The menu downloads it as CSV. Your agent adds a row with one request, and the database turns away a cell that does not fit its column.
+Records with typed columns: text, number, date, checkbox, choice or link. Tap a cell to change it, a heading to sort, drag a heading to move its column or its edge to widen it (double-click the edge to fit), filter by text, choice, checkbox or date range, and the numbers add up at the bottom. The menu downloads it as CSV. Your agent adds a row with one request, and the database turns away a cell that does not fit its column.
 
 ### Sharing
 

@@ -49,10 +49,10 @@ const BoardsContext = createContext<Boards>({
   touch: () => undefined,
 });
 
-/** A row as the app can trust it: an agent may have written columns the app cannot show. */
+/** A row as the app can trust it: an agent may have written columns the app cannot show, and a row from before a migration may lack a field. */
 export const fromRow = (row: unknown): Board => {
   const board = row as Board;
-  return { ...board, columns: readColumns(board.columns) };
+  return { ...board, description: board.description ?? "", columns: readColumns(board.columns) };
 };
 
 const byPinnedThenRecent = (a: Board, b: Board) =>

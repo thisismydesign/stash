@@ -31,7 +31,13 @@ import { settle, toggleTask } from "./lib/todo.ts";
 import { useLocalState } from "./lib/useLocalState.ts";
 import { KIND_COLOR, KIND_LABEL, tagColors } from "./theme.ts";
 
-type Draft = { title: string; tags: string[]; content: string; columns: Column[] };
+type Draft = {
+  title: string;
+  tags: string[];
+  content: string;
+  description: string;
+  columns: Column[];
+};
 
 const AUTOSAVE_MS = 800;
 
@@ -55,12 +61,12 @@ export function KindBadge({ kind }: { kind: BoardKind }) {
   );
 }
 
-/** A table's rows as loaded; with `edit`, they can be changed, `onResize` keeps a column's new width, and `onError` hears of a change that failed. */
+/** A table's rows as loaded; with `edit`, they can be changed, `onColumns` keeps columns as dragged, and `onError` hears of a change that failed. */
 export type TableRows = {
   rows?: SharedRow[];
   error?: string;
   edit?: RowEdits;
-  onResize?: (key: string, width: number) => void;
+  onColumns?: (columns: Column[]) => Promise<void>;
   onError?: (message: string) => void;
 };
 
@@ -96,7 +102,7 @@ export function BoardContent({
         columns={board.columns}
         rows={table.rows}
         edit={table.edit}
-        onResize={table.onResize}
+        onColumns={table.onColumns}
         onError={table.onError}
       />
     );
@@ -109,6 +115,7 @@ const draftOf = (board: Board): Draft => ({
   title: board.title,
   tags: board.tags,
   content: board.content,
+  description: board.description,
   columns: board.columns,
 });
 
@@ -119,6 +126,7 @@ const inputOf = (draft: Draft, board: Board) => ({
   title: draft.title.trim() || board.title,
   tags: cleanTags(draft.tags),
   content: draft.content,
+  description: draft.description.trim(),
   columns: draft.columns.filter((c) => c.name.trim() !== ""),
 });
 
@@ -144,6 +152,15 @@ function Editor({
         data={tags}
         value={draft.tags}
         onChange={(tags) => onChange({ ...draft, tags })}
+      />
+      <Textarea
+        label="Description"
+        size="sm"
+        autosize
+        minRows={1}
+        placeholder="A line or two about this board, in Markdown"
+        value={draft.description}
+        onChange={(e) => onChange({ ...draft, description: e.currentTarget.value })}
       />
       {markdown && (
         <Group justify="flex-end">
@@ -357,6 +374,7 @@ export function BoardPage({ id, onBack }: { id: string; onBack: () => void }) {
           </Text>
         </Group>
       )}
+      {!draft && board.description && <Markdown>{board.description}</Markdown>}
       {error && (
         <Text size="sm" c="red">
           {error}
@@ -376,12 +394,7 @@ export function BoardPage({ id, onBack }: { id: string; onBack: () => void }) {
               error: rowsError,
               edit: rowEdits,
               onError: setError,
-              onResize: (key, width) =>
-                void run(() =>
-                  update(board.id, {
-                    columns: board.columns.map((c) => (c.key === key ? { ...c, width } : c)),
-                  }),
-                ),
+              onColumns: (columns) => update(board.id, { columns }),
             }}
           />
         </>

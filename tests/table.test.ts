@@ -2,7 +2,7 @@ import assert from "node:assert/strict";
 import { test } from "node:test";
 import { columnKey, readColumns, toCell, type Column } from "../shared/tables.ts";
 import { csvFileName, toCsv } from "../app/src/lib/csv.ts";
-import { passes, total } from "../app/src/lib/table.ts";
+import { moveItem, passes, total } from "../app/src/lib/table.ts";
 
 const COLUMNS: Column[] = [
   { key: "date", name: "Date", type: "date" },
@@ -96,4 +96,10 @@ test("toCsv writes the names, then the cells as stored, quoted where RFC 4180 as
       "2026-03-01,Train,-58,Out,false\r\n",
   );
   assert.equal(csvFileName("Taxes: 2026/Q1"), "Taxes 2026 Q1.csv");
+});
+
+test("moveItem puts an item where it was dropped", () => {
+  assert.deepEqual(moveItem(["a", "b", "c", "d"], 0, 2), ["b", "c", "a", "d"]);
+  assert.deepEqual(moveItem(["a", "b", "c", "d"], 3, 0), ["d", "a", "b", "c"]);
+  assert.deepEqual(moveItem(["a", "b", "c", "d"], 1, 1), ["a", "b", "c", "d"]);
 });

@@ -18,6 +18,8 @@ export interface Board {
   title: string;
   kind: BoardKind;
   content: string;
+  /** A line or two about the board, in Markdown; empty for none. */
+  description: string;
   /** What a table's rows hold; `[]` for every other kind. */
   columns: Column[];
   tags: string[];
@@ -35,14 +37,22 @@ export interface Board {
 export type BoardInput = Partial<
   Pick<
     Board,
-    "title" | "kind" | "content" | "columns" | "tags" | "pinned" | "archived_at" | "image"
+    | "title"
+    | "kind"
+    | "content"
+    | "description"
+    | "columns"
+    | "tags"
+    | "pinned"
+    | "archived_at"
+    | "image"
   >
 >;
 
 /** What `shared_board(token)` returns: the board as its readers see it. */
 export type SharedBoard = Pick<
   Board,
-  "id" | "title" | "kind" | "content" | "columns" | "tags" | "image" | "updated_at"
+  "id" | "title" | "kind" | "content" | "description" | "columns" | "tags" | "image" | "updated_at"
 >;
 
 /**

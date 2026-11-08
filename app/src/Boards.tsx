@@ -315,6 +315,7 @@ const matches = (board: Board, query: string) => {
     !q ||
     board.title.toLowerCase().includes(q) ||
     board.content.toLowerCase().includes(q) ||
+    board.description.toLowerCase().includes(q) ||
     board.columns.some((c) => c.name.toLowerCase().includes(q)) ||
     board.tags.some((t) => t.includes(q))
   );

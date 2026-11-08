@@ -1,0 +1,16 @@
+.columns-grip {
+  cursor: grab;
+  touch-action: none;
+}
+
+.columns-editor .drag-moving {
+  opacity: 0.5;
+}
+
+.columns-editor .drag-before {
+  box-shadow: 0 -3px 0 var(--mantine-primary-color-filled);
+}
+
+.columns-editor .drag-after {
+  box-shadow: 0 3px 0 var(--mantine-primary-color-filled);
+}

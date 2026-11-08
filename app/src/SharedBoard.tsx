@@ -4,6 +4,7 @@ import { useCallback, useEffect, useRef, useState } from "react";
 import { isImageLink, readColumns, type SharedBoard } from "@shared/tables.ts";
 import { BoardContent, KindBadge } from "./Board.tsx";
 import { TagBadges, unique } from "./Boards.tsx";
+import { Markdown } from "./components/Markdown.tsx";
 import { Picture } from "./components/Picture.tsx";
 import { ago } from "./lib/format.ts";
 import { useSharedRows } from "./lib/rows.tsx";
@@ -27,7 +28,13 @@ export function SharedBoardPage({ token, onBack }: { token: string; onBack: () =
     setState(
       error
         ? { error: error.message }
-        : { board: board && { ...board, columns: readColumns(board.columns) } },
+        : {
+            board: board && {
+              ...board,
+              description: board.description ?? "",
+              columns: readColumns(board.columns),
+            },
+          },
     );
   }, [token]);
 
@@ -86,6 +93,7 @@ export function SharedBoardPage({ token, onBack }: { token: string; onBack: () =
           Updated {ago(board.updated_at)}
         </Text>
       </Group>
+      {board.description && <Markdown>{board.description}</Markdown>}
       {board.image && (
         <Picture
           src={

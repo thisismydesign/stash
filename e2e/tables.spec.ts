@@ -8,6 +8,7 @@ const COLUMNS = [
   { key: "amount", name: "Amount", type: "number", decimals: 2 },
   { key: "category", name: "Category", type: "select", options: ["Income", "Software"] },
   { key: "deductible", name: "Deductible", type: "checkbox" },
+  { key: "notes", name: "Notes", type: "text" },
 ];
 
 async function seed(request: APIRequestContext, session: Session, title: string) {
@@ -24,6 +25,7 @@ async function seed(request: APIRequestContext, session: Session, title: string)
       amount: -14.99,
       category: "Software",
       deductible: true,
+      notes: "A note long enough that the cell has to clip it before its end is in sight.",
     },
     { date: "2026-01-12", description: "Invoice", amount: 2400, category: "Income" },
   ]) {
@@ -65,7 +67,7 @@ test("edits a table's cells, adds, filters, sorts and sums its rows, and downloa
   const id = await seed(request, session, "e2e Ledger");
   await page.goto("/");
   await expect(page.getByRole("button", { name: /^e2e Ledger/ })).toContainText(
-    "Date · Description · Amount · Category · Deductible",
+    "Date · Description · Amount · Category · Deductible · Notes",
   );
   await page.getByRole("button", { name: /^e2e Ledger/ }).click();
   await expect(page.getByRole("cell", { name: "Domain" })).toBeVisible();
@@ -85,6 +87,7 @@ test("edits a table's cells, adds, filters, sorts and sums its rows, and downloa
         amount: -14.99,
         category: "Software",
         deductible: true,
+        notes: "A note long enough that the cell has to clip it before its end is in sight.",
       },
       {
         date: "2026-01-12",
@@ -137,14 +140,38 @@ test("edits a table's cells, adds, filters, sorts and sums its rows, and downloa
   await page.mouse.down();
   await page.mouse.move(box.x + box.width / 2 + 100, box.y + box.height / 2, { steps: 5 });
   await page.mouse.up();
+  const savedColumns = async () => {
+    const got = await request.get(`${REST}/boards?id=eq.${id}&select=columns`, {
+      headers: restHeaders(session),
+    });
+    return ((await got.json()) as { columns: { key: string; width?: number }[] }[])[0].columns;
+  };
   await expect
-    .poll(async () => {
-      const got = await request.get(`${REST}/boards?id=eq.${id}&select=columns`, {
-        headers: restHeaders(session),
-      });
-      return ((await got.json()) as { columns: { key: string; width?: number }[] }[])[0].columns;
-    })
+    .poll(savedColumns)
     .toEqual(COLUMNS.map((c) => (c.key === "description" ? { ...c, width: 250 } : c)));
+  // A double click on the edge fits the column to its widest entry.
+  await handle.dblclick();
+  await expect.poll(async () => (await savedColumns())[1].width).not.toBe(250);
+  expect((await savedColumns())[1].width).toBeGreaterThan(100);
+
+  // A clipped cell tells the whole of itself on hover.
+  await page.getByRole("cell", { name: /^A note long enough/ }).hover();
+  await expect(page.getByRole("tooltip", { name: /before its end is in sight\.$/ })).toBeVisible();
+
+  // A heading dragged past another moves its column, for good.
+  const from = (await page.getByRole("button", { name: "Sort by Amount" }).boundingBox())!;
+  const past = (await page.getByRole("button", { name: "Sort by Category" }).boundingBox())!;
+  await page.mouse.move(from.x + from.width / 2, from.y + from.height / 2);
+  await page.mouse.down();
+  await page.mouse.move(past.x + past.width - 4, past.y + past.height / 2, { steps: 8 });
+  await page.mouse.up();
+  await expect(page.getByRole("columnheader").nth(2)).toContainText("Category");
+  await expect(page.getByRole("columnheader").nth(3)).toContainText("Amount");
+  await expect
+    .poll(async () => (await savedColumns()).map((c) => c.key))
+    .toEqual(["date", "description", "category", "amount", "deductible", "notes"]);
+  // The drag's end is not a click: the rows are still in the order they were added, not by amount.
+  await expect(page.getByRole("row").nth(2)).toContainText("Invoice");
 
   await page.getByRole("button", { name: "Sort by Amount" }).click();
   await expect(page.getByRole("row").nth(1)).toContainText("Domain renewal");
@@ -158,10 +185,11 @@ test("edits a table's cells, adds, filters, sorts and sums its rows, and downloa
   expect(file.suggestedFilename()).toBe("e2e Ledger.csv");
   const csv = (await (await file.createReadStream()).toArray()).join("");
   expect(csv).toBe(
-    "Date,Description,Amount,Category,Deductible\r\n" +
-      "2026-01-05,Domain renewal,-14.99,Software,true\r\n" +
-      "2026-01-12,Invoice,2400,Income,true\r\n" +
-      "2026-02-01,,100,,\r\n",
+    "Date,Description,Category,Amount,Deductible,Notes\r\n" +
+      "2026-01-05,Domain renewal,Software,-14.99,true," +
+      "A note long enough that the cell has to clip it before its end is in sight.\r\n" +
+      "2026-01-12,Invoice,Income,2400,true,\r\n" +
+      "2026-02-01,,,100,,\r\n",
   );
 
   await page
@@ -196,13 +224,28 @@ test("makes an empty table, gives it columns, and removes one with its cells", a
   await page.getByRole("button", { name: "Add column" }).click();
   await page.getByRole("textbox", { name: "Name" }).last().fill("Amount");
   await page.getByLabel("Type").last().selectOption("number");
+  // The grip drags a column above another.
+  const grip = (await page
+    .getByRole("button", { name: "Move column Amount", exact: true })
+    .boundingBox())!;
+  const above = (await page
+    .getByRole("button", { name: "Move column Paid on", exact: true })
+    .boundingBox())!;
+  await page.mouse.move(grip.x + grip.width / 2, grip.y + grip.height / 2);
+  await page.mouse.down();
+  await page.mouse.move(grip.x + grip.width / 2, above.y - 10, { steps: 8 });
+  await page.mouse.up();
+  await expect(page.getByRole("textbox", { name: "Name" }).first()).toHaveValue("Amount");
+  await page.getByLabel("Description").fill("Money **in and out**, for the return.");
   await page.getByRole("button", { name: "Done" }).click();
+  await expect(page.getByRole("columnheader").first()).toContainText("Amount");
+  await expect(page.locator("strong", { hasText: "in and out" })).toBeVisible();
   await expect(page.getByRole("columnheader", { name: "Paid on" })).toBeVisible();
   await page.getByRole("button", { name: "Add row" }).click();
-  await page.getByRole("textbox", { name: "Paid on" }).fill("2026-05-01");
-  await page.keyboard.press("Tab");
-  await page.getByRole("row").nth(1).getByRole("cell").nth(1).click();
   await page.getByRole("textbox", { name: "Amount" }).fill("12.5");
+  await page.keyboard.press("Enter");
+  await page.getByRole("row").nth(1).getByRole("cell").nth(1).click();
+  await page.getByRole("textbox", { name: "Paid on" }).fill("2026-05-01");
   await page.keyboard.press("Enter");
   await expect
     .poll(() => rows(request, session, id))

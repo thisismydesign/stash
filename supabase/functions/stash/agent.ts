@@ -5,8 +5,9 @@ Stash ({{site}}) is the user's personal notepad: boards of notes, lists and idea
 
 ## Boards
 
-A board is one row in \`boards\`: \`title\`, \`kind\`, \`content\`, \`columns\`, \`tags\`, \`pinned\`, \`archived_at\`, \`share_token\`, \`image\`.
+A board is one row in \`boards\`: \`title\`, \`kind\`, \`content\`, \`description\`, \`columns\`, \`tags\`, \`pinned\`, \`archived_at\`, \`share_token\`, \`image\`.
 
+- \`description\` is a line or two about the board in Markdown, shown under its title; empty for none.
 - \`content\` is the whole board as text. Read it, change it, write it back whole. A \`table\` keeps it empty: its data is in \`columns\` and \`rows\`.
 - \`kind\` is one of:
   - \`todo\` — a Markdown task list. Items are \`- [ ] text\`; nested items indent two spaces under their parent. Ticked items are \`- [x]\` and live under a \`## Done\` heading at the end; the app moves whole top-level items there when ticked and back when unticked. Open items stay above the heading. Headings and plain lines may group items.

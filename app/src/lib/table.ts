@@ -35,6 +35,14 @@ export const total = (rows: readonly SharedRow[], key: string) =>
       .toPrecision(15),
   );
 
+/** The list with the item at `from` moved to sit at `to`. */
+export function moveItem<T>(list: readonly T[], from: number, to: number): T[] {
+  const next = [...list];
+  const [item] = next.splice(from, 1);
+  next.splice(to, 0, item);
+  return next;
+}
+
 export const isFiltering = (f: Filter) =>
   f.query.trim() !== "" ||
   Object.values(f.choices).some((c) => c.length > 0) ||

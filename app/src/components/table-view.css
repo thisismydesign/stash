@@ -37,3 +37,19 @@
 .table-resize:active {
   background-color: var(--mantine-primary-color-filled);
 }
+
+.table-view th {
+  user-select: none;
+}
+
+.table-view .drag-moving {
+  opacity: 0.5;
+}
+
+.table-view .drag-before {
+  box-shadow: inset 3px 0 0 var(--mantine-primary-color-filled);
+}
+
+.table-view .drag-after {
+  box-shadow: inset -3px 0 0 var(--mantine-primary-color-filled);
+}

@@ -24,7 +24,7 @@ import {
   IconSearch,
   IconTrash,
 } from "@tabler/icons-react";
-import { useEffect, useRef, useState } from "react";
+import { useEffect, useRef, useState, type ReactNode } from "react";
 import {
   COLUMN_WIDTH,
   MIN_COLUMN_WIDTH,
@@ -41,10 +41,12 @@ import {
   formatCell,
   formatNumber,
   isFiltering,
+  moveItem,
   passes,
   total,
   type Filter,
 } from "../lib/table.ts";
+import { useDragOrder } from "../lib/useDragOrder.ts";
 import { Setting, SettingsMenu } from "./Settings.tsx";
 
 import "./table-view.css";
@@ -68,10 +70,13 @@ function ResizeHandle({
   width,
   onResize,
   onDone,
+  onFit,
 }: {
   width: number;
   onResize: (width: number) => void;
   onDone: (width: number) => void;
+  /** A double click: as wide as the widest entry. */
+  onFit: () => void;
 }) {
   const start = useRef<{ x: number; width: number }>(undefined);
   const widthAt = (x: number) =>
@@ -106,7 +111,63 @@ function ResizeHandle({
       }}
       onPointerCancel={cancel}
       onLostPointerCapture={cancel}
+      onDoubleClick={onFit}
     />
+  );
+}
+
+const CELL_PADDING = 24;
+
+/** A link reads without its scheme. */
+const linkText = (url: string) => url.replace(/^https?:\/\/(www\.)?/, "");
+
+/** How wide a column must be for its heading and every cell to show whole, measured as they read in the table's own font. */
+function fittedWidth(table: HTMLElement, column: Column, rows: readonly SharedRow[]): number {
+  if (column.type === "checkbox") return 100;
+  const probe = document.createElement("span");
+  probe.style.cssText = "position:absolute;visibility:hidden;white-space:nowrap";
+  table.append(probe);
+  const widthOf = (text: string, size: string, weight: string) => {
+    probe.style.fontSize = size;
+    probe.style.fontWeight = weight;
+    probe.textContent = text;
+    return probe.getBoundingClientRect().width;
+  };
+  // A choice sits in a badge: smaller, bolder, padded.
+  const cellWidth = (value: Cell | undefined) => {
+    const text = formatCell(column, value);
+    if (column.type === "select") return widthOf(text, "var(--mantine-font-size-xs)", "700") + 20;
+    if (column.type === "url") return widthOf(linkText(text), "var(--mantine-font-size-sm)", "400");
+    return widthOf(text, "var(--mantine-font-size-sm)", "400");
+  };
+  const widest = Math.max(
+    widthOf(column.name, "var(--mantine-font-size-sm)", "600") + 20,
+    ...rows.map((r) => cellWidth(r.data[column.key])),
+  );
+  probe.remove();
+  return Math.round(Math.min(MAX_COLUMN_WIDTH, Math.max(MIN_COLUMN_WIDTH, widest + CELL_PADDING)));
+}
+
+/** Tells the whole of what it holds on hover, when the cell clips it. */
+function Clipped({ label, children }: { label: string; children: ReactNode }) {
+  const ref = useRef<HTMLDivElement>(null);
+  const [open, setOpen] = useState(false);
+  const check = () => {
+    const el = ref.current?.firstElementChild;
+    setOpen(!!el && (el.scrollHeight > el.clientHeight + 1 || el.scrollWidth > el.clientWidth + 1));
+  };
+  return (
+    <Tooltip
+      label={label}
+      opened={open}
+      multiline
+      maw={360}
+      events={{ hover: false, focus: false, touch: false }}
+    >
+      <div ref={ref} onMouseEnter={check} onMouseLeave={() => setOpen(false)}>
+        {children}
+      </div>
+    </Tooltip>
   );
 }
 
@@ -229,16 +290,18 @@ function Shown({ column, value }: { column: Column; value: Cell | undefined }) {
   if (column.type === "checkbox") return <Checkbox size="xs" checked={value === true} readOnly />;
   if (column.type === "url" && typeof value === "string" && isLink(value))
     return (
-      <Anchor
-        href={value}
-        target="_blank"
-        rel="noopener noreferrer"
-        size="sm"
-        lineClamp={1}
-        onClick={(e) => e.stopPropagation()}
-      >
-        {value.replace(/^https?:\/\/(www\.)?/, "")}
-      </Anchor>
+      <Clipped label={value}>
+        <Anchor
+          href={value}
+          target="_blank"
+          rel="noopener noreferrer"
+          size="sm"
+          lineClamp={1}
+          onClick={(e) => e.stopPropagation()}
+        >
+          {linkText(value)}
+        </Anchor>
+      </Clipped>
     );
   if (column.type === "select")
     return (
@@ -246,10 +309,13 @@ function Shown({ column, value }: { column: Column; value: Cell | undefined }) {
         {formatCell(column, value)}
       </Badge>
     );
+  const text = formatCell(column, value);
   return (
-    <Text size="sm" lineClamp={2} ta={column.type === "number" ? "right" : undefined}>
-      {formatCell(column, value)}
-    </Text>
+    <Clipped label={text}>
+      <Text size="sm" lineClamp={2} ta={column.type === "number" ? "right" : undefined}>
+        {text}
+      </Text>
+    </Clipped>
   );
 }
 
@@ -396,26 +462,44 @@ function CellView({
 
 /** A table's rows under its columns, filtered and sorted as asked; with `edit`, cells take a click to change and rows come and go, and `onError` hears of a change that failed. */
 export function TableView({
-  columns,
+  columns: given,
   rows,
   edit,
-  onResize,
+  onColumns,
   onError = () => undefined,
 }: {
   columns: Column[];
   rows: readonly SharedRow[];
   edit?: RowEdits;
-  /** Keeps a dragged width; without it, a drag shows for the reader only. */
-  onResize?: (key: string, width: number) => void;
+  /** Keeps the columns as dragged, wider or in another order; without it, a drag shows for the reader only. */
+  onColumns?: (columns: Column[]) => Promise<void>;
   onError?: (message: string) => void;
 }) {
   const [sort, setSort] = useState<Sort>();
   const [filter, setFilter] = useState<Filter>(NO_FILTER);
   const [editing, setEditing] = useState<Editing>();
-  // Widths as dragged, over what the columns say, so a drag shows at once; what the columns then say wins.
+  const table = useRef<HTMLTableElement>(null);
+  // Widths and order as dragged, over what the columns say, so a drag shows at once; what the columns then say wins.
   const [widths, setWidths] = useState<Record<string, number>>({});
-  useEffect(() => setWidths({}), [columns]);
+  const [order, setOrder] = useState<string[]>();
+  useEffect(() => {
+    setWidths({});
+    setOrder(undefined);
+  }, [given]);
+  const columns = order ? order.flatMap((key) => given.filter((c) => c.key === key)) : given;
   const widthOf = (c: Column) => widths[c.key] ?? c.width ?? COLUMN_WIDTH;
+  // Shown at once; what the columns said comes back if the keeping fails.
+  const keep = (next: Column[]) => {
+    setOrder(next.map((c) => c.key));
+    onColumns?.(next).catch((e: Error) => {
+      setOrder(undefined);
+      setWidths({});
+      onError(e.message);
+    });
+  };
+  const resize = (key: string, width: number) =>
+    keep(columns.map((c) => (c.key === key ? { ...c, width } : c)));
+  const dragging = useDragOrder("x", (from, to) => keep(moveItem(columns, from, to)));
   const tableWidth = columns.reduce((w, c) => w + widthOf(c), 0) + (edit ? ACTIONS_WIDTH : 0);
   if (columns.length === 0)
     return (
@@ -430,6 +514,7 @@ export function TableView({
       )
     : filtered;
   const sortBy = (key: string) =>
+    dragging.justDragged() ||
     setSort(
       !sort || sort.key !== key
         ? { key, desc: false }
@@ -462,6 +547,7 @@ export function TableView({
           highlightOnHover={!!edit}
           className="table-view"
           w={tableWidth}
+          ref={table}
         >
           <colgroup>
             {columns.map((c) => (
@@ -471,8 +557,15 @@ export function TableView({
           </colgroup>
           <Table.Thead>
             <Table.Tr>
-              {columns.map((c) => (
-                <Table.Th key={c.key} ta={c.type === "number" ? "right" : undefined} pos="relative">
+              {columns.map((c, i) => (
+                <Table.Th
+                  key={c.key}
+                  ta={c.type === "number" ? "right" : undefined}
+                  pos="relative"
+                  ref={dragging.item(i)}
+                  className={dragging.className(i)}
+                  {...dragging.handle(i)}
+                >
                   <Tooltip
                     label={c.name}
                     openDelay={300}
@@ -499,7 +592,8 @@ export function TableView({
                   <ResizeHandle
                     width={widthOf(c)}
                     onResize={(w) => setWidths((all) => ({ ...all, [c.key]: w }))}
-                    onDone={(w) => onResize?.(c.key, w)}
+                    onDone={(w) => resize(c.key, w)}
+                    onFit={() => resize(c.key, fittedWidth(table.current!, c, rows))}
                   />
                 </Table.Th>
               ))}

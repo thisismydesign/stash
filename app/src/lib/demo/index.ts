@@ -18,6 +18,7 @@ export const demoBoard = (input: BoardInput, at = Date.now(), id: string = newId
   title: input.title ?? "",
   kind: input.kind ?? "markdown",
   content: input.content ?? "",
+  description: input.description ?? "",
   columns: input.columns ?? [],
   tags: input.tags ?? [],
   pinned: input.pinned ?? false,
