@@ -63,10 +63,7 @@ jobs:
       - uses: supabase/setup-cli@v3
         with:
           version: ${{ env.SUPABASE_CLI }}
-      # The stack's images are kept from run to run: pulled once, saved after a green job, loaded before the next.
-      - uses: AndreKurait/docker-cache@e1eb0120c0c16b3f1c6ff1c0ef4ebc9f67f8dc6a # 0.7.1
-        with:
-          key: supabase-images-${{ env.SUPABASE_CLI }}-${{ env.SUPABASE_INTERNAL_IMAGE_REGISTRY }}-${{ hashFiles('supabase/config.toml') }}
+      # Keeping the images in the Actions cache was tried: loading them back took longer than pulling them.
       # GHCR throttles pulls too, now and then, mid-pull; images pulled before that stay, so a retry finishes the rest.
       - run: |
           for attempt in 1 2 3; do
