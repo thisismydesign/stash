@@ -22,7 +22,7 @@ Boards also show as a list, and each board's menu pins, archives or deletes it, 
   <img src="docs/screenshots/menu.png" alt="A board's menu" width="300">
 </p>
 
-A new board is a page or Markdown. A page starts from a template: blank, a to-do, a mood board of pictures, a comparison, a recipe or a timeline.
+A new board is a page, Markdown or a table. A page starts from a template: blank, a to-do, a mood board of pictures, a comparison, a recipe or a timeline.
 
 ### To-do
 
@@ -49,6 +49,10 @@ A page of your own, rendered in a sandbox: mood boards, comparisons, anything wi
 <p>
   <img src="docs/screenshots/html.png" alt="A page" width="300">
 </p>
+
+### Table
+
+Records with typed columns: text, number, date, checkbox, choice or link. Tap a cell to change it, a heading to sort, filter by text, choice, checkbox or date range, and the numbers add up at the bottom. The menu downloads it as CSV. Your agent adds a row with one request, and the database turns away a cell that does not fit its column.
 
 ### Sharing
 

@@ -7,7 +7,7 @@ import {
   useState,
   type ReactNode,
 } from "react";
-import { isImageLink, type Board, type BoardInput } from "@shared/tables.ts";
+import { isImageLink, readColumns, type Board, type BoardInput } from "@shared/tables.ts";
 import { demoBoard, demoBoards } from "./demo/index.ts";
 import { SIGNED_URL_SECONDS, removeImage, signImages, uploadImage } from "./images.ts";
 import { supabase, useSession } from "./supabase.ts";
@@ -30,6 +30,8 @@ type Boards = {
   setPicture: (id: string, picture: File | string | null) => Promise<void>;
   /** What to show for a board's `image`; undefined while a file's signed URL is on its way. */
   pictureSrc: (image: string | null) => string | undefined;
+  /** Marks a board changed now, as the database does when one of its rows changes. */
+  touch: (id: string) => void;
 };
 
 const unavailable = () => Promise.reject(new Error("Not signed in."));
@@ -44,7 +46,14 @@ const BoardsContext = createContext<Boards>({
   unshare: unavailable,
   setPicture: unavailable,
   pictureSrc: () => undefined,
+  touch: () => undefined,
 });
+
+/** A row as the app can trust it: an agent may have written columns the app cannot show. */
+export const fromRow = (row: unknown): Board => {
+  const board = row as Board;
+  return { ...board, columns: readColumns(board.columns) };
+};
 
 const byPinnedThenRecent = (a: Board, b: Board) =>
   Number(b.pinned) - Number(a.pinned) || b.updated_at.localeCompare(a.updated_at);
@@ -53,7 +62,7 @@ type Result = { data: unknown; error: { message: string } | null };
 
 const RESIGN_EVERY_MS = 5 * 60_000;
 
-const fail = (error: { message: string } | null) => {
+export const fail = (error: { message: string } | null) => {
   if (error) throw new Error(error.message);
 };
 
@@ -81,7 +90,7 @@ export function BoardsProvider({ children }: { children: ReactNode }) {
     if (current.current !== owner) return;
     if (error) return setError(error.message);
     setError(undefined);
-    setBoards((data as Board[]).sort(byPinnedThenRecent));
+    setBoards(data.map(fromRow).sort(byPinnedThenRecent));
   }, [owner]);
 
   useEffect(() => {
@@ -123,10 +132,13 @@ export function BoardsProvider({ children }: { children: ReactNode }) {
 
   useReloadOnReturn(reload);
 
-  const put = (board: Board) =>
+  const put = (row: unknown) => {
+    const board = fromRow(row);
     setBoards((list) =>
       [board, ...(list ?? []).filter((b) => b.id !== board.id)].sort(byPinnedThenRecent),
     );
+    return board;
+  };
 
   const create = async (input: BoardInput) => {
     if (local) {
@@ -136,8 +148,7 @@ export function BoardsProvider({ children }: { children: ReactNode }) {
     }
     const { data, error } = await supabase!.from("boards").insert(input).select().single();
     fail(error);
-    put(data as Board);
-    return data as Board;
+    return put(data);
   };
 
   // Requests to one board land in order, each waiting for the one before it; the last one's row is what shows.
@@ -149,7 +160,7 @@ export function BoardsProvider({ children }: { children: ReactNode }) {
       const { data, error } = await turn;
       fail(error);
       if (!data) throw new Error("No such board.");
-      if (pending.current.get(id) === turn && current.current === owner) put(data as Board);
+      if (pending.current.get(id) === turn && current.current === owner) put(data);
     } finally {
       if (pending.current.get(id) === turn) pending.current.delete(id);
     }
@@ -207,6 +218,13 @@ export function BoardsProvider({ children }: { children: ReactNode }) {
   const pictureSrc = (image: string | null) =>
     image === null ? undefined : isImageLink(image) ? image : signed[image]?.url;
 
+  const touch = (id: string) => {
+    const updated_at = new Date().toISOString();
+    setBoards((list) =>
+      list?.map((b) => (b.id === id ? { ...b, updated_at } : b)).sort(byPinnedThenRecent),
+    );
+  };
+
   return (
     <BoardsContext
       value={{
@@ -221,6 +239,7 @@ export function BoardsProvider({ children }: { children: ReactNode }) {
         unshare,
         setPicture,
         pictureSrc,
+        touch,
       }}
     >
       {children}

@@ -15,6 +15,7 @@ import {
   IconArchive,
   IconArchiveOff,
   IconDots,
+  IconDownload,
   IconPhoto,
   IconPin,
   IconPinnedOff,
@@ -30,6 +31,8 @@ import {
   type Board,
 } from "@shared/tables.ts";
 import { useBoards } from "./lib/boards.tsx";
+import { csvFileName, download, toCsv } from "./lib/csv.ts";
+import { loadRows } from "./lib/rows.tsx";
 
 function PictureModal({
   board,
@@ -247,6 +250,21 @@ export function BoardMenu({
           <Menu.Item leftSection={<IconPhoto size={16} />} onClick={() => setPicturing(true)}>
             Picture…
           </Menu.Item>
+          {board.kind === "table" && (
+            <Menu.Item
+              leftSection={<IconDownload size={16} />}
+              onClick={() =>
+                void run(async () =>
+                  download(
+                    csvFileName(board.title),
+                    toCsv(board.columns, await loadRows(board.id, local)),
+                  ),
+                )
+              }
+            >
+              Download CSV
+            </Menu.Item>
+          )}
           {!local && (
             <Menu.Item leftSection={<IconShare size={16} />} onClick={() => setSharing(true)}>
               {board.share_token ? "Sharing…" : "Share…"}

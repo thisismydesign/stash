@@ -15,20 +15,23 @@ import {
 } from "@mantine/core";
 import { IconArrowLeft, IconPencil, IconShare } from "@tabler/icons-react";
 import { useEffect, useRef, useState } from "react";
-import type { Board, BoardKind, SharedBoard } from "@shared/tables.ts";
+import type { Board, BoardKind, Column, SharedBoard, SharedRow } from "@shared/tables.ts";
 import { BoardMenu } from "./BoardMenu.tsx";
 import { KindIcon, TagBadges, cleanTags, unique } from "./Boards.tsx";
+import { ColumnsEditor } from "./components/ColumnsEditor.tsx";
 import { HtmlView } from "./components/HtmlView.tsx";
 import { Picture } from "./components/Picture.tsx";
 import { Markdown } from "./components/Markdown.tsx";
 import { MarkdownEditor } from "./components/MarkdownEditor.tsx";
+import { TableView } from "./components/TableView.tsx";
 import { useBoards } from "./lib/boards.tsx";
 import { ago } from "./lib/format.ts";
+import { useRows, type RowEdits } from "./lib/rows.tsx";
 import { settle, toggleTask } from "./lib/todo.ts";
 import { useLocalState } from "./lib/useLocalState.ts";
 import { KIND_COLOR, KIND_LABEL, tagColors } from "./theme.ts";
 
-type Draft = { title: string; tags: string[]; content: string };
+type Draft = { title: string; tags: string[]; content: string; columns: Column[] };
 
 const AUTOSAVE_MS = 800;
 
@@ -36,6 +39,7 @@ const PLACEHOLDER: Record<BoardKind, string> = {
   todo: "- [ ] First thing\n- [ ] Second thing\n  - [ ] A step of it",
   markdown: "# Notes\n\nAnything, in Markdown.",
   html: "<!doctype html>\n<html>\n  <body>\n    Your page.\n  </body>\n</html>",
+  table: "",
 };
 
 export function KindBadge({ kind }: { kind: BoardKind }) {
@@ -51,15 +55,50 @@ export function KindBadge({ kind }: { kind: BoardKind }) {
   );
 }
 
-/** The board as read; with `onToggle`, a todo's boxes are live. */
+/** A table's rows as loaded; with `edit`, they can be changed, and `onError` hears of a change that failed. */
+export type TableRows = {
+  rows?: SharedRow[];
+  error?: string;
+  edit?: RowEdits;
+  onError?: (message: string) => void;
+};
+
+/** The board as read; with `onToggle`, a todo's boxes are live. A table shows `table`. */
 export function BoardContent({
   board,
   onToggle,
+  table,
 }: {
   board: SharedBoard;
   onToggle?: (line: number) => void;
+  table?: TableRows;
 }) {
   if (board.kind === "html") return <HtmlView html={board.content} title={board.title} />;
+  if (board.kind === "table") {
+    if (table?.error)
+      return (
+        <Text size="sm" c="red">
+          {table.error}
+        </Text>
+      );
+    if (!table?.rows)
+      return (
+        <Group gap="sm">
+          <Loader size="sm" />
+          <Text size="sm" c="dimmed">
+            Loading rows…
+          </Text>
+        </Group>
+      );
+    return (
+      <TableView
+        columns={board.columns}
+        rows={table.rows}
+        edit={table.edit}
+        onError={table.onError}
+      />
+    );
+  }
   if (board.content.trim() === "") return <Text c="dimmed">Nothing here yet.</Text>;
   return <Markdown onToggle={onToggle}>{board.content}</Markdown>;
 }
@@ -68,14 +107,17 @@ const draftOf = (board: Board): Draft => ({
   title: board.title,
   tags: board.tags,
   content: board.content,
+  columns: board.columns,
 });
 
 type View = "formatted" | "source";
 
+// A column not named yet is not a column yet.
 const inputOf = (draft: Draft, board: Board) => ({
   title: draft.title.trim() || board.title,
   tags: cleanTags(draft.tags),
   content: draft.content,
+  columns: draft.columns.filter((c) => c.name.trim() !== ""),
 });
 
 function Editor({
@@ -90,7 +132,7 @@ function Editor({
   onChange: (d: Draft) => void;
 }) {
   const [view, setView] = useLocalState<View>("editor", "formatted");
-  const markdown = kind !== "html";
+  const markdown = kind === "todo" || kind === "markdown";
   const formatted = markdown && view === "formatted";
   return (
     <Stack gap="sm">
@@ -114,7 +156,12 @@ function Editor({
           />
         </Group>
       )}
-      {formatted ? (
+      {kind === "table" ? (
+        <ColumnsEditor
+          columns={draft.columns}
+          onChange={(columns) => onChange({ ...draft, columns })}
+        />
+      ) : formatted ? (
         <MarkdownEditor
           initial={draft.content}
           onChange={(content) => onChange({ ...draft, content })}
@@ -138,6 +185,7 @@ function Editor({
 export function BoardPage({ id, onBack }: { id: string; onBack: () => void }) {
   const { boards, update, pictureSrc } = useBoards();
   const board = boards?.find((b) => b.id === id);
+  const { rows, error: rowsError, ...rowEdits } = useRows(board?.kind === "table" ? id : undefined);
   const [draft, setDraft] = useState<Draft | null>(null);
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState<string>();
@@ -186,7 +234,7 @@ export function BoardPage({ id, onBack }: { id: string; onBack: () => void }) {
   useEffect(() => {
     if (!board || opened.current === board.id) return;
     opened.current = board.id;
-    if (board.content === "") edit(board);
+    if (board.kind === "table" ? board.columns.length === 0 : board.content === "") edit(board);
   }, [board]);
 
   if (!boards)
@@ -318,7 +366,11 @@ export function BoardPage({ id, onBack }: { id: string; onBack: () => void }) {
       ) : (
         <>
           {board.image && <Picture src={pictureSrc(board.image)} height={200} radius="md" />}
-          <BoardContent board={board} onToggle={toggle} />
+          <BoardContent
+            board={board}
+            onToggle={toggle}
+            table={{ rows, error: rowsError, edit: rowEdits, onError: setError }}
+          />
         </>
       )}
     </Stack>

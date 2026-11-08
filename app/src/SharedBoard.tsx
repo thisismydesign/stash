@@ -1,11 +1,12 @@
 import { ActionIcon, Alert, Badge, Button, Group, Loader, Stack, Text, Title } from "@mantine/core";
 import { IconArrowLeft } from "@tabler/icons-react";
 import { useCallback, useEffect, useRef, useState } from "react";
-import { isImageLink, type SharedBoard } from "@shared/tables.ts";
+import { isImageLink, readColumns, type SharedBoard } from "@shared/tables.ts";
 import { BoardContent, KindBadge } from "./Board.tsx";
 import { TagBadges, unique } from "./Boards.tsx";
 import { Picture } from "./components/Picture.tsx";
 import { ago } from "./lib/format.ts";
+import { useSharedRows } from "./lib/rows.tsx";
 import { API_BASE, supabase } from "./lib/supabase.ts";
 import { useReloadOnReturn } from "./lib/useReloadOnReturn.ts";
 import { tagColors } from "./theme.ts";
@@ -22,7 +23,12 @@ export function SharedBoardPage({ token, onBack }: { token: string; onBack: () =
     const turn = ++latest.current;
     const { data, error } = await supabase!.rpc("shared_board", { token }).maybeSingle();
     if (turn !== latest.current) return;
-    setState(error ? { error: error.message } : { board: data as SharedBoard | null });
+    const board = data as SharedBoard | null;
+    setState(
+      error
+        ? { error: error.message }
+        : { board: board && { ...board, columns: readColumns(board.columns) } },
+    );
   }, [token]);
 
   useEffect(() => {
@@ -30,6 +36,7 @@ export function SharedBoardPage({ token, onBack }: { token: string; onBack: () =
     void load();
   }, [load]);
   useReloadOnReturn(load);
+  const table = useSharedRows(state.board?.kind === "table" ? token : undefined);
 
   if (state.error)
     return (
@@ -90,7 +97,7 @@ export function SharedBoardPage({ token, onBack }: { token: string; onBack: () =
           radius="md"
         />
       )}
-      <BoardContent board={board} />
+      <BoardContent board={board} table={table} />
     </Stack>
   );
 }

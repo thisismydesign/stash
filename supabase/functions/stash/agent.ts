@@ -5,13 +5,22 @@ Stash ({{site}}) is the user's personal notepad: boards of notes, lists and idea
 
 ## Boards
 
-A board is one row in \`boards\`: \`title\`, \`kind\`, \`content\`, \`tags\`, \`pinned\`, \`archived_at\`, \`share_token\`, \`image\`.
+A board is one row in \`boards\`: \`title\`, \`kind\`, \`content\`, \`columns\`, \`tags\`, \`pinned\`, \`archived_at\`, \`share_token\`, \`image\`.
 
-- \`content\` is the whole board as text. Read it, change it, write it back whole.
+- \`content\` is the whole board as text. Read it, change it, write it back whole. A \`table\` keeps it empty: its data is in \`columns\` and \`rows\`.
 - \`kind\` is one of:
   - \`todo\` — a Markdown task list. Items are \`- [ ] text\`; nested items indent two spaces under their parent. Ticked items are \`- [x]\` and live under a \`## Done\` heading at the end; the app moves whole top-level items there when ticked and back when unticked. Open items stay above the heading. Headings and plain lines may group items.
   - \`markdown\` — free-form notes, rendered with GitHub-flavoured Markdown.
   - \`html\` — a complete document, rendered in a sandboxed iframe (scripts run, no access to the app); the app calls it a page. Inline styles and scripts, absolute URLs for images, \`color-scheme: light dark\` so it reads in either theme. The app starts people off with templates (a mood board of pictures, a comparison, a recipe, a timeline); design yours to fit what the user asked for.
+  - \`table\` — a table of records, such as transactions for a tax return: \`columns\` says what each row holds, and the rows are rows of their own (below), so you add one with one request.
+- \`columns\` is a JSON list, in display order, of \`{"key", "name", "type"}\`, where \`key\` names the cell in a row's \`data\` (short, \`snake_case\`, never changed once rows have it), \`name\` is the heading, and \`type\` is one of:
+  - \`text\` — a string
+  - \`number\` — a JSON number; \`"decimals": 2\` on the column fixes how many are shown. Money is a number plus a currency column; money out is negative.
+  - \`date\` — \`"YYYY-MM-DD"\`
+  - \`checkbox\` — \`true\` or \`false\`
+  - \`select\` — one of the column's \`"options": [...]\`
+  - \`url\` — a link
+  Cells of a type other than written read as text, so get the type right before writing rows: the database rejects a cell of the wrong type, a choice not among the column's options, and a key no column has, with a message saying which. \`[]\` for every other kind.
 - \`tags\` is a list of short lower-case labels (for example \`travel\`, \`home\`, \`cars\`); the app colours and filters by them. Reuse what exists before inventing new ones: list the boards first.
 - \`pinned\` boards sort first. \`archived_at\` hides a board from the main list; never delete a board the user did not ask to delete.
 - \`share_token\` is set while the board is shared: anyone with the link \`{{shareLink}}\` can read it. Only the sharing functions below change it. Share a board only when the user asks.
@@ -40,6 +49,15 @@ Boards are read and written through the Supabase REST API at {{rest}}, described
 - Delete: \`DELETE {{rest}}/boards?id=eq.<id>\`
 - Share: \`POST {{rest}}/rpc/share_board\` with JSON \`{"board_id"}\`; returns \`[board]\` with \`share_token\` filled in. Give the user the link \`{{shareLink}}\`.
 - Stop sharing: \`POST {{rest}}/rpc/unshare_board\` with JSON \`{"board_id"}\`; the link stops working.
+
+A table's rows are in \`rows\`: \`id\`, \`board_id\`, \`data\`, \`created_at\`, \`updated_at\`. \`data\` is an object keyed by the table's column keys; a key left out is an empty cell. The app lists rows in the order they were added and sorts by any column on request; a row's change counts as the table's.
+
+- Make a table: \`POST {{rest}}/boards\` with JSON \`{"title", "kind": "table", "columns": [{"key": "date", "name": "Date", "type": "date"}, {"key": "amount", "name": "Amount", "type": "number", "decimals": 2}, ...], "tags"}\`
+- List rows: \`GET {{rest}}/rows?board_id=eq.<board_id>&order=created_at\`; filter on a cell with \`data->>category=eq.Travel\` or \`data->>date=gte.2026-01-01\`
+- Add a row: \`POST {{rest}}/rows\` with JSON \`{"board_id", "data": {"date": "2026-03-01", "description": "Domain renewal", "amount": -14.99, "currency": "EUR"}}\` and header \`Prefer: return=representation\`
+- Change a row: \`PATCH {{rest}}/rows?id=eq.<id>\` with JSON \`{"data": {...}}\`, the whole object
+- Delete a row: \`DELETE {{rest}}/rows?id=eq.<id>\`
+- Add or change columns: \`PATCH\` the board with the whole \`columns\` list. A column left out takes its cells from every row, and a change of type fails while rows hold cells of the old one. A table with rows cannot become another kind.
 
 Pictures go in the private \`images\` bucket, under a folder named by the user's id (\`GET {{user}}\` returns it as \`id\`), with the same headers as above:
 

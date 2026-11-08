@@ -41,6 +41,8 @@ export type Preview = { text: string; open?: string[]; done?: number };
 export function preview(board: Board): Preview {
   if (board.kind === "html") return { text: htmlExcerpt(board.content) };
   if (board.kind === "markdown") return { text: excerpt(board.content) };
+  if (board.kind === "table")
+    return { text: clip(board.columns.map((c) => c.name).join(" · ")) || "No columns yet" };
   const { open, done } = summarize(board.content);
   const text = open.length
     ? `${open.length} open${done ? `, ${done} done` : ""}`

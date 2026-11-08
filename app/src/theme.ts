@@ -11,12 +11,14 @@ export const KIND_COLOR: Record<BoardKind, string> = {
   todo: "green",
   markdown: "blue",
   html: "orange",
+  table: "grape",
 };
 
 export const KIND_LABEL: Record<BoardKind, string> = {
   todo: "To-do",
   markdown: "Markdown",
   html: "Page",
+  table: "Table",
 };
 
 /** Mantine's defaults read faint on dark backgrounds. */

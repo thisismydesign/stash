@@ -28,6 +28,15 @@ const owner = created.data.user.id;
 const demo = new URL("../../app/src/lib/demo/", import.meta.url);
 const file = (name: string) => readFileSync(new URL(name, demo), "utf8");
 // One at a time, last first, so updated_at puts them in the order listed.
-for (const board of exampleBoards(file).reverse())
-  check(await db.from("boards").insert({ ...board, owner }));
+for (const { rows, ...board } of exampleBoards(file).reverse()) {
+  const made = await db
+    .from("boards")
+    .insert({ ...board, owner })
+    .select("id")
+    .single();
+  check(made);
+  // One at a time: created_at orders them.
+  for (const data of rows ?? [])
+    check(await db.from("rows").insert({ board_id: made.data!.id, owner, data }));
+}
 console.log(`Seeded ${STASH_DEV_EMAIL}`);

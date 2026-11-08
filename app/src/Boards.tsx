@@ -28,6 +28,7 @@ import {
   IconSearch,
   IconShare,
   IconSquare,
+  IconTable,
 } from "@tabler/icons-react";
 import { useMemo, useState } from "react";
 import type { Board, BoardKind } from "@shared/tables.ts";
@@ -46,6 +47,7 @@ const KIND_ICON: Record<BoardKind, typeof IconLayout2> = {
   todo: IconListCheck,
   markdown: IconMarkdown,
   html: IconLayout2,
+  table: IconTable,
 };
 
 export function KindIcon({ kind, size = 16 }: { kind: BoardKind; size?: number }) {
@@ -212,12 +214,14 @@ function Section({ title, view, ...list }: ListProps & { title?: string; view: "
   );
 }
 
-type Format = "page" | "markdown";
+type Format = "page" | "markdown" | "table";
 
 const startInput = (format: Format, template: TemplateId, title: string) =>
   format === "markdown"
     ? { kind: "markdown" as const, content: "" }
-    : fromTemplate(template, title);
+    : format === "table"
+      ? { kind: "table" as const, columns: [] }
+      : fromTemplate(template, title);
 
 function NewBoard({
   opened,
@@ -280,6 +284,7 @@ function NewBoard({
             data={[
               { value: "page", label: KIND_LABEL.html },
               { value: "markdown", label: KIND_LABEL.markdown },
+              { value: "table", label: KIND_LABEL.table },
             ]}
           />
           {format === "page" && <TemplatePicker value={template} onChange={setTemplate} />}
@@ -310,6 +315,7 @@ const matches = (board: Board, query: string) => {
     !q ||
     board.title.toLowerCase().includes(q) ||
     board.content.toLowerCase().includes(q) ||
+    board.columns.some((c) => c.name.toLowerCase().includes(q)) ||
     board.tags.some((t) => t.includes(q))
   );
 };
