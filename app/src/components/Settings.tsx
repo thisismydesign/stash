@@ -19,12 +19,14 @@ export function SettingsMenu({
   label,
   width,
   active = false,
+  icon: Icon = IconAdjustmentsHorizontal,
   children,
 }: {
   label: string;
   width: number;
   /** Marks the button when a choice inside narrows what the page shows. */
   active?: boolean;
+  icon?: typeof IconAdjustmentsHorizontal;
   children: ReactNode;
 }) {
   const mobile = useMediaQuery("(max-width: 48em)") ?? false;
@@ -38,7 +40,7 @@ export function SettingsMenu({
         title={label}
         onClick={mobile ? () => setOpened(true) : undefined}
       >
-        <IconAdjustmentsHorizontal size={18} />
+        <Icon size={18} />
       </ActionIcon>
     </Indicator>
   );

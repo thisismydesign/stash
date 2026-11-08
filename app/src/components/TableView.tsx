@@ -18,6 +18,7 @@ import {
   IconArrowDown,
   IconArrowUp,
   IconDots,
+  IconFilter,
   IconPlus,
   IconSearch,
   IconTrash,
@@ -80,7 +81,12 @@ function Filters({
         style={{ flex: 1, minWidth: 0, maxWidth: 420 }}
       />
       {narrowing.length > 0 && (
-        <SettingsMenu label="Filters" width={300} active={isFiltering({ ...filter, query: "" })}>
+        <SettingsMenu
+          label="Filters"
+          width={300}
+          icon={IconFilter}
+          active={isFiltering({ ...filter, query: "" })}
+        >
           <Stack gap="md">
             {narrowing.map((c) =>
               c.type === "select" ? (
