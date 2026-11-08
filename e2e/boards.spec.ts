@@ -226,6 +226,8 @@ test("builds a table with the editor's table tools", async ({ page, request }) =
   await expect(page.getByRole("button", { name: "Add column after" })).toBeHidden();
   await page.getByRole("button", { name: "Insert table" }).click();
   await page.getByRole("button", { name: "Insert 2 × 2 table" }).click();
+  // TipTap focuses the editor on the next animation frame; keys typed before that are lost.
+  await expect(page.getByLabel("Content")).toBeFocused();
   await page.keyboard.type("City");
   await page.keyboard.press("Tab");
   await page.keyboard.type("Nights");
