@@ -16,7 +16,7 @@ Purpose: the stack and the principles every change MUST respect. Intent, not imp
 - Shared boards stay out of search and AI indexes: `/s/*` answers with a `noindex` header, `robots.txt` keeps training crawlers off it, and the page sends no referrer. The home page stays indexable. The price is that the host sees every token in its request paths, so request logs are sensitive.
 - `content` is the whole board as text: Markdown for `todo` and `markdown`, a document for `html`. One text column keeps every kind readable and writable by an agent with a single request.
 - A visitor who is not signed in sees the example boards from `app/src/lib/demo`, kept in memory; the dev account starts with the same ones.
-- `markdown` boards are edited rendered, as they read, or as source. The formatted editor rewrites the Markdown it saves; it says so when the board holds something it cannot show, such as raw HTML, and the source editor keeps it as is.
+- `todo` and `markdown` boards are edited rendered, as they read, or as source. The formatted editor rewrites the Markdown it saves; it says so when the board holds something it cannot show, such as raw HTML, and the source editor keeps it as is.
 - `kind` chooses the renderer. `todo` renders task items as live checkboxes; ticking one moves it under a `## Done` heading, unticking brings it back. The rules live in `app/src/lib/todo.ts` and the agent instructions, and MUST agree.
 - The app shows `html` as *Page* and offers a new board as a page from a template (`app/src/lib/templates`, where `todo` is one of them) or as Markdown. Templates are the app's; an agent writes any page it likes. `kind` stays the contract.
 

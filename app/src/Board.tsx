@@ -90,7 +90,8 @@ function Editor({
   onChange: (d: Draft) => void;
 }) {
   const [view, setView] = useLocalState<View>("editor", "formatted");
-  const formatted = kind === "markdown" && view === "formatted";
+  const markdown = kind !== "html";
+  const formatted = markdown && view === "formatted";
   return (
     <Stack gap="sm">
       <TagsInput
@@ -100,7 +101,7 @@ function Editor({
         value={draft.tags}
         onChange={(tags) => onChange({ ...draft, tags })}
       />
-      {kind === "markdown" && (
+      {markdown && (
         <Group justify="flex-end">
           <SegmentedControl
             size="xs"
@@ -123,7 +124,7 @@ function Editor({
           aria-label="Content"
           autosize
           minRows={14}
-          spellCheck={kind !== "html"}
+          spellCheck={markdown}
           placeholder={PLACEHOLDER[kind]}
           value={draft.content}
           onChange={(e) => onChange({ ...draft, content: e.currentTarget.value })}

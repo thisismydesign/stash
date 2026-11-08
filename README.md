@@ -26,7 +26,7 @@ A new board is a page or Markdown. A page starts from a template: blank, a to-do
 
 ### To-do
 
-A Markdown task list. Tick an item and it moves under *Done*; untick it and it comes back. Items may nest, hold links, and be grouped under headings.
+A Markdown task list. Tick an item and it moves under *Done*; untick it and it comes back. Items may nest, hold links, and be grouped under headings. Edit it as you see it, or as Markdown source.
 
 <p>
   <img src="docs/screenshots/todo.png" alt="A to-do board" width="300">

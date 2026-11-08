@@ -142,6 +142,23 @@ test("ticks a task under Done and brings it back", async ({ page, request }) => 
     .toBe("- [ ] Visa\n- [ ] Bike\n  - [ ] Helmet\n- [ ] Pillow\n\n## Done\n\n");
 });
 
+test("adds a task with Enter in the formatted editor", async ({ page, request }) => {
+  const session = await signIn(page);
+  const id = await seed(request, session, { title: "e2e Tasks", kind: "todo", content: TODO });
+  await open(page, "e2e Tasks");
+  await page.getByRole("button", { name: "Edit" }).click();
+  // The editor opens with the caret after the last item, Helmet.
+  const editor = page.getByLabel("Content");
+  await expect(editor.getByRole("checkbox")).toHaveCount(4);
+  await expect(editor).toBeFocused();
+  await page.keyboard.press("Enter");
+  await page.keyboard.type("Charger");
+  await expect(editor.getByRole("checkbox")).toHaveCount(5);
+  await expect
+    .poll(() => content(request, session, id))
+    .toBe("- [ ] Visa\n- [ ] Pillow\n- [ ] Bike\n  - [ ] Helmet\n  - [ ] Charger\n");
+});
+
 test("makes a board, writes it formatted and as source, and deletes it", async ({
   page,
   request,
