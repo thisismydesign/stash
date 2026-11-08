@@ -55,11 +55,12 @@ export function KindBadge({ kind }: { kind: BoardKind }) {
   );
 }
 
-/** A table's rows as loaded; with `edit`, they can be changed, and `onError` hears of a change that failed. */
+/** A table's rows as loaded; with `edit`, they can be changed, `onResize` keeps a column's new width, and `onError` hears of a change that failed. */
 export type TableRows = {
   rows?: SharedRow[];
   error?: string;
   edit?: RowEdits;
+  onResize?: (key: string, width: number) => void;
   onError?: (message: string) => void;
 };
 
@@ -95,6 +96,7 @@ export function BoardContent({
         columns={board.columns}
         rows={table.rows}
         edit={table.edit}
+        onResize={table.onResize}
         onError={table.onError}
       />
     );
@@ -369,7 +371,18 @@ export function BoardPage({ id, onBack }: { id: string; onBack: () => void }) {
           <BoardContent
             board={board}
             onToggle={toggle}
-            table={{ rows, error: rowsError, edit: rowEdits, onError: setError }}
+            table={{
+              rows,
+              error: rowsError,
+              edit: rowEdits,
+              onError: setError,
+              onResize: (key, width) =>
+                void run(() =>
+                  update(board.id, {
+                    columns: board.columns.map((c) => (c.key === key ? { ...c, width } : c)),
+                  }),
+                ),
+            }}
           />
         </>
       )}

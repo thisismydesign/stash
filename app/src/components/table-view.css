@@ -15,3 +15,25 @@
 .table-sort {
   width: 100%;
 }
+
+.table-view tfoot th {
+  position: sticky;
+  bottom: 0;
+  background-color: var(--mantine-color-body);
+}
+
+.table-resize {
+  position: absolute;
+  top: 0;
+  bottom: 0;
+  right: -4px;
+  width: 8px;
+  cursor: col-resize;
+  touch-action: none;
+  z-index: 1;
+}
+
+.table-resize:hover,
+.table-resize:active {
+  background-color: var(--mantine-primary-color-filled);
+}

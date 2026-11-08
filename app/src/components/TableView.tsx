@@ -12,6 +12,7 @@ import {
   Table,
   Text,
   TextInput,
+  Tooltip,
   UnstyledButton,
 } from "@mantine/core";
 import {
@@ -23,8 +24,17 @@ import {
   IconSearch,
   IconTrash,
 } from "@tabler/icons-react";
-import { useRef, useState } from "react";
-import { isLink, toCell, type Cell, type Column, type SharedRow } from "@shared/tables.ts";
+import { useEffect, useRef, useState } from "react";
+import {
+  COLUMN_WIDTH,
+  MIN_COLUMN_WIDTH,
+  MAX_COLUMN_WIDTH,
+  isLink,
+  toCell,
+  type Cell,
+  type Column,
+  type SharedRow,
+} from "@shared/tables.ts";
 import type { RowData, RowEdits } from "../lib/rows.tsx";
 import {
   NO_FILTER,
@@ -42,8 +52,6 @@ import "./table-view.css";
 type Sort = { key: string; desc: boolean };
 type Editing = { id: string; key: string };
 
-const COLUMN_WIDTH = 150;
-
 /** Empty cells sort last either way. */
 const compare = (a: Cell | undefined, b: Cell | undefined) => {
   if (a == null) return b == null ? 0 : 1;
@@ -52,6 +60,55 @@ const compare = (a: Cell | undefined, b: Cell | undefined) => {
   if (typeof a === "boolean" && typeof b === "boolean") return Number(a) - Number(b);
   return String(a).localeCompare(String(b));
 };
+
+const ACTIONS_WIDTH = 40;
+
+/** Dragged at a heading's right edge; the width follows the pointer and is kept when it lets go. */
+function ResizeHandle({
+  width,
+  onResize,
+  onDone,
+}: {
+  width: number;
+  onResize: (width: number) => void;
+  onDone: (width: number) => void;
+}) {
+  const start = useRef<{ x: number; width: number }>(undefined);
+  const widthAt = (x: number) =>
+    Math.round(
+      Math.min(
+        MAX_COLUMN_WIDTH,
+        Math.max(MIN_COLUMN_WIDTH, start.current!.width + x - start.current!.x),
+      ),
+    );
+  const cancel = () => {
+    start.current = undefined;
+  };
+  return (
+    <div
+      className="table-resize"
+      role="separator"
+      aria-orientation="vertical"
+      aria-label="Resize column"
+      onPointerDown={(e) => {
+        e.preventDefault();
+        e.stopPropagation();
+        start.current = { x: e.clientX, width };
+        e.currentTarget.setPointerCapture(e.pointerId);
+      }}
+      onPointerMove={(e) => start.current && onResize(widthAt(e.clientX))}
+      onPointerUp={(e) => {
+        if (!start.current) return;
+        const next = widthAt(e.clientX);
+        const before = start.current.width;
+        start.current = undefined;
+        if (next !== before) onDone(next);
+      }}
+      onPointerCancel={cancel}
+      onLostPointerCapture={cancel}
+    />
+  );
+}
 
 const without = (data: RowData, key: string) => {
   const rest = { ...data };
@@ -342,16 +399,24 @@ export function TableView({
   columns,
   rows,
   edit,
+  onResize,
   onError = () => undefined,
 }: {
   columns: Column[];
   rows: readonly SharedRow[];
   edit?: RowEdits;
+  /** Keeps a dragged width; without it, a drag shows for the reader only. */
+  onResize?: (key: string, width: number) => void;
   onError?: (message: string) => void;
 }) {
   const [sort, setSort] = useState<Sort>();
   const [filter, setFilter] = useState<Filter>(NO_FILTER);
   const [editing, setEditing] = useState<Editing>();
+  // Widths as dragged, over what the columns say, so a drag shows at once; what the columns then say wins.
+  const [widths, setWidths] = useState<Record<string, number>>({});
+  useEffect(() => setWidths({}), [columns]);
+  const widthOf = (c: Column) => widths[c.key] ?? c.width ?? COLUMN_WIDTH;
+  const tableWidth = columns.reduce((w, c) => w + widthOf(c), 0) + (edit ? ACTIONS_WIDTH : 0);
   if (columns.length === 0)
     return (
       <Text c="dimmed">
@@ -383,32 +448,62 @@ export function TableView({
   return (
     <>
       {rows.length > 0 && <Filters columns={columns} filter={filter} onChange={setFilter} />}
-      <Table.ScrollContainer minWidth={columns.length * COLUMN_WIDTH + (edit ? 40 : 0)}>
-        <Table withTableBorder withColumnBorders highlightOnHover={!!edit} className="table-view">
+      {/* Bounded to the viewport, so the sideways scrollbar stays in reach however many rows there are. */}
+      <Table.ScrollContainer
+        minWidth={tableWidth}
+        maxHeight="max(20rem, calc(100dvh - 20rem))"
+        scrollAreaProps={{ type: "auto" }}
+      >
+        <Table
+          withTableBorder
+          withColumnBorders
+          stickyHeader
+          layout="fixed"
+          highlightOnHover={!!edit}
+          className="table-view"
+          w={tableWidth}
+        >
+          <colgroup>
+            {columns.map((c) => (
+              <col key={c.key} style={{ width: widthOf(c) }} />
+            ))}
+            {edit && <col style={{ width: ACTIONS_WIDTH }} />}
+          </colgroup>
           <Table.Thead>
             <Table.Tr>
               {columns.map((c) => (
-                <Table.Th key={c.key} ta={c.type === "number" ? "right" : undefined}>
-                  <UnstyledButton
-                    onClick={() => sortBy(c.key)}
-                    className="table-sort"
-                    aria-label={`Sort by ${c.name}`}
+                <Table.Th key={c.key} ta={c.type === "number" ? "right" : undefined} pos="relative">
+                  <Tooltip
+                    label={c.name}
+                    openDelay={300}
+                    events={{ hover: true, focus: true, touch: true }}
                   >
-                    <Group
-                      gap={4}
-                      wrap="nowrap"
-                      justify={c.type === "number" ? "flex-end" : undefined}
+                    <UnstyledButton
+                      onClick={() => sortBy(c.key)}
+                      className="table-sort"
+                      aria-label={`Sort by ${c.name}`}
                     >
-                      <Text size="sm" fw={600} lineClamp={1}>
-                        {c.name}
-                      </Text>
-                      {sort?.key === c.key &&
-                        (sort.desc ? <IconArrowDown size={14} /> : <IconArrowUp size={14} />)}
-                    </Group>
-                  </UnstyledButton>
+                      <Group
+                        gap={4}
+                        wrap="nowrap"
+                        justify={c.type === "number" ? "flex-end" : undefined}
+                      >
+                        <Text size="sm" fw={600} lineClamp={1}>
+                          {c.name}
+                        </Text>
+                        {sort?.key === c.key &&
+                          (sort.desc ? <IconArrowDown size={14} /> : <IconArrowUp size={14} />)}
+                      </Group>
+                    </UnstyledButton>
+                  </Tooltip>
+                  <ResizeHandle
+                    width={widthOf(c)}
+                    onResize={(w) => setWidths((all) => ({ ...all, [c.key]: w }))}
+                    onDone={(w) => onResize?.(c.key, w)}
+                  />
                 </Table.Th>
               ))}
-              {edit && <Table.Th w={40} />}
+              {edit && <Table.Th />}
             </Table.Tr>
           </Table.Thead>
           <Table.Tbody>

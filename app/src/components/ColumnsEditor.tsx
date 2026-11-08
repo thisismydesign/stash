@@ -50,9 +50,13 @@ export function ColumnsEditor({
     fresh.current.add(key);
     set(i, { ...column, key, name });
   };
+  // A type's own fields go with it; what every column has, such as its width, stays.
   const retype = (i: number, type: ColumnType) => {
-    const { key, name } = columns[i];
-    set(i, { key, name, type, ...(type === "select" ? { options: [] } : {}) });
+    const column: Column = { ...columns[i], type };
+    delete column.options;
+    delete column.decimals;
+    if (type === "select") column.options = [];
+    set(i, column);
   };
   const add = () => {
     const key = columnKey(
@@ -115,14 +119,11 @@ export function ColumnsEditor({
                 allowDecimal={false}
                 placeholder="As written"
                 value={c.decimals ?? ""}
-                onChange={(v) =>
-                  set(
-                    i,
-                    typeof v === "number"
-                      ? { ...c, decimals: v }
-                      : { key: c.key, name: c.name, type: c.type },
-                  )
-                }
+                onChange={(v) => {
+                  const column = { ...c };
+                  delete column.decimals;
+                  set(i, typeof v === "number" ? { ...c, decimals: v } : column);
+                }}
                 w={120}
               />
             )}

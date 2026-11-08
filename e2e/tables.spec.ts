@@ -128,6 +128,24 @@ test("edits a table's cells, adds, filters, sorts and sums its rows, and downloa
   await page.getByRole("heading", { name: "e2e Ledger" }).click();
   await expect(page.getByText("3 rows")).toBeVisible();
 
+  // A heading tells its full name on hover, and its right edge drags the column wider.
+  await page.getByRole("button", { name: "Sort by Description" }).hover();
+  await expect(page.getByRole("tooltip", { name: "Description" })).toBeVisible();
+  const handle = page.getByRole("separator", { name: "Resize column" }).nth(1);
+  const box = (await handle.boundingBox())!;
+  await page.mouse.move(box.x + box.width / 2, box.y + box.height / 2);
+  await page.mouse.down();
+  await page.mouse.move(box.x + box.width / 2 + 100, box.y + box.height / 2, { steps: 5 });
+  await page.mouse.up();
+  await expect
+    .poll(async () => {
+      const got = await request.get(`${REST}/boards?id=eq.${id}&select=columns`, {
+        headers: restHeaders(session),
+      });
+      return ((await got.json()) as { columns: { key: string; width?: number }[] }[])[0].columns;
+    })
+    .toEqual(COLUMNS.map((c) => (c.key === "description" ? { ...c, width: 250 } : c)));
+
   await page.getByRole("button", { name: "Sort by Amount" }).click();
   await expect(page.getByRole("row").nth(1)).toContainText("Domain renewal");
   await page.getByRole("button", { name: "Sort by Amount" }).click();
@@ -232,6 +250,7 @@ test("the database turns away cells that do not fit their columns, whoever write
   expect((await columns([{ key: "Bad Key", name: "Bad", type: "text" }])).status()).toBe(400);
   expect((await columns([{ key: "x", name: "X", type: "interval" }])).status()).toBe(400);
   expect((await columns([{ key: "x", name: "X", type: "text", extra: 1 }])).status()).toBe(400);
+  expect((await columns([{ key: "x", name: "X", type: "text", width: 10 }])).status()).toBe(400);
   expect(
     await message(
       await columns(COLUMNS.map((c) => (c.key === "amount" ? { ...c, type: "text" } : c))),

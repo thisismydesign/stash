@@ -20,7 +20,7 @@ A board is one row in \`boards\`: \`title\`, \`kind\`, \`content\`, \`columns\`,
   - \`checkbox\` — \`true\` or \`false\`
   - \`select\` — one of the column's \`"options": [...]\`
   - \`url\` — a link
-  Cells of a type other than written read as text, so get the type right before writing rows: the database rejects a cell of the wrong type, a choice not among the column's options, and a key no column has, with a message saying which. \`[]\` for every other kind.
+  A column may also carry \`"width"\`, how wide it shows in pixels. Cells of a type other than written read as text, so get the type right before writing rows: the database rejects a cell of the wrong type, a choice not among the column's options, and a key no column has, with a message saying which. \`[]\` for every other kind.
 - \`tags\` is a list of short lower-case labels (for example \`travel\`, \`home\`, \`cars\`); the app colours and filters by them. Reuse what exists before inventing new ones: list the boards first.
 - \`pinned\` boards sort first. \`archived_at\` hides a board from the main list; never delete a board the user did not ask to delete.
 - \`share_token\` is set while the board is shared: anyone with the link \`{{shareLink}}\` can read it. Only the sharing functions below change it. Share a board only when the user asks.

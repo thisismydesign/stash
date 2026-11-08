@@ -32,12 +32,16 @@ test("readColumns keeps well-formed columns and drops the rest", () => {
       { key: "date", name: "Again", type: "text" },
       { key: "", name: "Nameless", type: "text" },
       { key: "odd", name: "Odd", type: "interval" },
+      { key: "wide", name: "Wide", type: "text", width: 240.4 },
+      { key: "thin", name: "Thin", type: "text", width: 3 },
       "not a column",
     ]),
     [
       { key: "date", name: "Date", type: "date" },
       { key: "amount", name: "amount", type: "number", decimals: 2 },
       { key: "currency", name: "Currency", type: "select", options: ["EUR"] },
+      { key: "wide", name: "Wide", type: "text", width: 240 },
+      { key: "thin", name: "Thin", type: "text" },
     ],
   );
   assert.deepEqual(readColumns("[]"), []);

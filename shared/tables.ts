@@ -69,7 +69,14 @@ export interface Column {
   options?: string[];
   /** For `number`: how many decimals a cell shows. */
   decimals?: number;
+  /** How wide the column shows, in pixels. */
+  width?: number;
 }
+
+/** What a column shows as without a `width` of its own, and the least it may be dragged to; the check on `columns` mirrors the bounds. */
+export const COLUMN_WIDTH = 150;
+export const MIN_COLUMN_WIDTH = 40;
+export const MAX_COLUMN_WIDTH = 2000;
 
 export type Cell = string | number | boolean | null;
 
@@ -110,6 +117,8 @@ export function readColumns(value: unknown): Column[] {
         : [];
     if (column.type === "number" && typeof c.decimals === "number" && c.decimals >= 0)
       column.decimals = Math.min(10, Math.floor(c.decimals));
+    if (typeof c.width === "number" && c.width >= MIN_COLUMN_WIDTH && c.width <= MAX_COLUMN_WIDTH)
+      column.width = Math.round(c.width);
     columns.push(column);
   }
   return columns;
