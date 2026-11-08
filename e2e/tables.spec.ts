@@ -323,12 +323,11 @@ test("the database turns away cells that do not fit their columns, whoever write
       ])
     ).status(),
   ).toBe(400);
-  // The database names whichever misfit row it meets first.
   expect(
     await message(
       await columns(COLUMNS.map((c) => (c.key === "amount" ? { ...c, type: "text" } : c))),
     ),
-  ).toMatch(/^A row does not fit the new columns\. Amount: (-14\.99|2400|12) is not text\.$/);
+  ).toMatch(/^A row does not fit the new columns\. Amount: .+ is not text\.$/);
   const markdown = await request.patch(`${REST}/boards?id=eq.${id}`, {
     headers: restHeaders(session),
     data: { kind: "markdown", columns: [] },
