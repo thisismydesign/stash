@@ -24,7 +24,7 @@ import {
   IconSearch,
   IconTrash,
 } from "@tabler/icons-react";
-import { useEffect, useRef, useState, type ReactNode } from "react";
+import { memo, useCallback, useEffect, useMemo, useRef, useState, type ReactNode } from "react";
 import {
   COLUMN_WIDTH,
   MIN_COLUMN_WIDTH,
@@ -157,17 +157,22 @@ function Clipped({ label, children }: { label: string; children: ReactNode }) {
     const el = ref.current?.firstElementChild;
     setOpen(!!el && (el.scrollHeight > el.clientHeight + 1 || el.scrollWidth > el.clientWidth + 1));
   };
+  const inner = (
+    <div ref={ref} onMouseEnter={check} onMouseLeave={() => setOpen(false)}>
+      {children}
+    </div>
+  );
+  // A tooltip per cell would weigh on every render of a long table; one exists only while shown.
+  if (!open) return inner;
   return (
     <Tooltip
       label={label}
-      opened={open}
+      opened
       multiline
       maw={360}
       events={{ hover: false, focus: false, touch: false }}
     >
-      <div ref={ref} onMouseEnter={check} onMouseLeave={() => setOpen(false)}>
-        {children}
-      </div>
+      {inner}
     </Tooltip>
   );
 }
@@ -400,29 +405,33 @@ function Input({
   );
 }
 
+type RowHandlers = {
+  change: (id: string, data: RowData) => void;
+  remove: (id: string) => void;
+  report: (message: string) => void;
+  setEditing: (editing: Editing | undefined) => void;
+};
+
 function CellView({
   column,
   row,
   editing,
   edit,
-  onEdit,
-  onError,
+  on,
 }: {
   column: Column;
   row: SharedRow;
   editing: boolean;
-  edit?: RowEdits;
-  onEdit: (on: boolean) => void;
-  onError: (message: string) => void;
+  edit: boolean;
+  on: RowHandlers;
 }) {
   const value = row.data[column.key];
+  const onEdit = (now: boolean) => on.setEditing(now ? { id: row.id, key: column.key } : undefined);
   const write = (cell: Cell) =>
-    edit
-      ?.change(
-        row.id,
-        cell === null ? without(row.data, column.key) : { ...row.data, [column.key]: cell },
-      )
-      .catch((e: Error) => onError(e.message));
+    on.change(
+      row.id,
+      cell === null ? without(row.data, column.key) : { ...row.data, [column.key]: cell },
+    );
   if (edit && column.type === "checkbox")
     return (
       <Table.Td>
@@ -440,7 +449,7 @@ function CellView({
         <Input
           column={column}
           value={value}
-          onError={onError}
+          onError={on.report}
           onDone={(cell) => {
             onEdit(false);
             if (cell !== undefined) void write(cell);
@@ -461,6 +470,56 @@ function CellView({
   );
 }
 
+/** One row; rendered again only when it, the columns or its editing change, so a drag on the headings leaves the body be. */
+const BodyRow = memo(function BodyRow({
+  row,
+  columns,
+  edit,
+  editingKey,
+  on,
+}: {
+  row: SharedRow;
+  columns: Column[];
+  edit: boolean;
+  editingKey?: string;
+  on: RowHandlers;
+}) {
+  return (
+    <Table.Tr>
+      {columns.map((c) => (
+        <CellView
+          key={c.key}
+          column={c}
+          row={row}
+          edit={edit}
+          editing={editingKey === c.key}
+          on={on}
+        />
+      ))}
+      {edit && (
+        <Table.Td p={0} ta="center">
+          <Menu position="bottom-end" shadow="md" width={160}>
+            <Menu.Target>
+              <ActionIcon variant="subtle" color="gray" size="sm" aria-label="Row actions">
+                <IconDots size={16} />
+              </ActionIcon>
+            </Menu.Target>
+            <Menu.Dropdown>
+              <Menu.Item
+                color="red"
+                leftSection={<IconTrash size={16} />}
+                onClick={() => on.remove(row.id)}
+              >
+                Delete row
+              </Menu.Item>
+            </Menu.Dropdown>
+          </Menu>
+        </Table.Td>
+      )}
+    </Table.Tr>
+  );
+});
+
 /** A table's rows under its columns, filtered and sorted as asked; with `edit`, cells take a click to change and rows come and go, and `onError` hears of a change that failed. */
 export function TableView({
   columns: given,
@@ -480,6 +539,23 @@ export function TableView({
   const [filter, setFilter] = useState<Filter>(NO_FILTER);
   const [editing, setEditing] = useState<Editing>();
   const table = useRef<HTMLTableElement>(null);
+  const cols = useRef<Record<string, HTMLTableColElement | null>>({});
+  // The rows' handlers stay the same between renders, so a row left alone is not rendered again.
+  const latest = useRef({ edit, onError });
+  latest.current = { edit, onError };
+  const on = useMemo<RowHandlers>(
+    () => ({
+      change: (id, data) =>
+        void latest.current.edit
+          ?.change(id, data)
+          .catch((e: Error) => latest.current.onError(e.message)),
+      remove: (id) =>
+        void latest.current.edit?.remove(id).catch((e: Error) => latest.current.onError(e.message)),
+      report: (message) => latest.current.onError(message),
+      setEditing,
+    }),
+    [],
+  );
   // Widths and order as dragged, over what the columns say, so a drag shows at once; what the columns then say wins.
   const [widths, setWidths] = useState<Record<string, number>>({});
   const [order, setOrder] = useState<string[]>();
@@ -487,8 +563,11 @@ export function TableView({
     setWidths({});
     setOrder(undefined);
   }, [given]);
-  const columns = order ? order.flatMap((key) => given.filter((c) => c.key === key)) : given;
-  const widthOf = (c: Column) => widths[c.key] ?? c.width ?? COLUMN_WIDTH;
+  const columns = useMemo(
+    () => (order ? order.flatMap((key) => given.filter((c) => c.key === key)) : given),
+    [given, order],
+  );
+  const widthOf = useCallback((c: Column) => widths[c.key] ?? c.width ?? COLUMN_WIDTH, [widths]);
   // Shown at once; what the columns said comes back if the keeping fails.
   const keep = (next: Column[]) => {
     setOrder(next.map((c) => c.key));
@@ -498,8 +577,18 @@ export function TableView({
       onError(e.message);
     });
   };
-  const resize = (key: string, width: number) =>
+  const resize = (key: string, width: number) => {
+    setWidths((all) => ({ ...all, [key]: width }));
     keep(columns.map((c) => (c.key === key ? { ...c, width } : c)));
+  };
+  // While a heading's edge is dragged, the width goes straight to the column, not through a render.
+  const preview = (key: string, width: number) => {
+    const col = cols.current[key];
+    if (!col || !table.current) return;
+    col.style.width = `${width}px`;
+    const others = columns.reduce((w, c) => (c.key === key ? w : w + widthOf(c)), 0);
+    table.current.style.width = `${others + width + (edit ? ACTIONS_WIDTH : 0)}px`;
+  };
   const dragging = useDragOrder("x", (from, to) => keep(moveItem(columns, from, to)));
   const tableWidth = columns.reduce((w, c) => w + widthOf(c), 0) + (edit ? ACTIONS_WIDTH : 0);
   if (columns.length === 0)
@@ -523,9 +612,11 @@ export function TableView({
           ? undefined
           : { key, desc: true },
     );
-  const attempt = (change: Promise<unknown>) => change.catch((e: Error) => onError(e.message));
   const addRow = () =>
-    attempt(edit!.add({}).then((row) => setEditing({ id: row.id, key: columns[0].key })));
+    edit!
+      .add({})
+      .then((row) => setEditing({ id: row.id, key: columns[0].key }))
+      .catch((e: Error) => onError(e.message));
   const count =
     filtered.length === rows.length
       ? `${rows.length} ${rows.length === 1 ? "row" : "rows"}`
@@ -552,7 +643,13 @@ export function TableView({
         >
           <colgroup>
             {columns.map((c) => (
-              <col key={c.key} style={{ width: widthOf(c) }} />
+              <col
+                key={c.key}
+                style={{ width: widthOf(c) }}
+                ref={(el) => {
+                  cols.current[c.key] = el;
+                }}
+              />
             ))}
             {edit && <col style={{ width: ACTIONS_WIDTH }} />}
           </colgroup>
@@ -592,7 +689,7 @@ export function TableView({
                   </Tooltip>
                   <ResizeHandle
                     width={widthOf(c)}
-                    onResize={(w) => setWidths((all) => ({ ...all, [c.key]: w }))}
+                    onResize={(w) => preview(c.key, w)}
                     onDone={(w) => resize(c.key, w)}
                     onFit={() => resize(c.key, fittedWidth(table.current!, c, rows))}
                   />
@@ -612,44 +709,14 @@ export function TableView({
               </Table.Tr>
             )}
             {shown.map((row) => (
-              <Table.Tr key={row.id}>
-                {columns.map((c) => (
-                  <CellView
-                    key={c.key}
-                    column={c}
-                    row={row}
-                    edit={edit}
-                    editing={editing?.id === row.id && editing.key === c.key}
-                    onEdit={(on) => setEditing(on ? { id: row.id, key: c.key } : undefined)}
-                    onError={onError}
-                  />
-                ))}
-                {edit && (
-                  <Table.Td p={0} ta="center">
-                    <Menu position="bottom-end" shadow="md" width={160}>
-                      <Menu.Target>
-                        <ActionIcon
-                          variant="subtle"
-                          color="gray"
-                          size="sm"
-                          aria-label="Row actions"
-                        >
-                          <IconDots size={16} />
-                        </ActionIcon>
-                      </Menu.Target>
-                      <Menu.Dropdown>
-                        <Menu.Item
-                          color="red"
-                          leftSection={<IconTrash size={16} />}
-                          onClick={() => void attempt(edit.remove(row.id))}
-                        >
-                          Delete row
-                        </Menu.Item>
-                      </Menu.Dropdown>
-                    </Menu>
-                  </Table.Td>
-                )}
-              </Table.Tr>
+              <BodyRow
+                key={row.id}
+                row={row}
+                columns={columns}
+                edit={!!edit}
+                editingKey={editing?.id === row.id ? editing.key : undefined}
+                on={on}
+              />
             ))}
           </Table.Tbody>
           {rows.length > 0 && (

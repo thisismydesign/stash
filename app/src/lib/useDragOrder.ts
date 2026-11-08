@@ -8,7 +8,13 @@ export type DragOrder = { from: number; to: number };
 export function useDragOrder(axis: "x" | "y", onMove: (from: number, to: number) => void) {
   const [drag, setDrag] = useState<DragOrder>();
   const items = useRef<(HTMLElement | null)[]>([]);
-  const press = useRef<{ from: number; at: number; rects: DOMRect[]; moved: boolean }>(undefined);
+  const press = useRef<{
+    from: number;
+    at: number;
+    rects: DOMRect[];
+    moved: boolean;
+    to?: number;
+  }>(undefined);
   // The click that follows a drag is not a click.
   const dragged = useRef(false);
   const pos = (e: PointerEvent) => (axis === "x" ? e.clientX : e.clientY);
@@ -32,7 +38,11 @@ export function useDragOrder(axis: "x" | "y", onMove: (from: number, to: number)
     if (!p.moved && Math.abs(pos(e) - p.at) < 6) return;
     if (!p.moved) e.currentTarget.setPointerCapture(e.pointerId);
     p.moved = true;
-    setDrag({ from: p.from, to: targetOf(pos(e), p.from, p.rects) });
+    // Rendered only when the landing place changes, not with every pixel.
+    const to = targetOf(pos(e), p.from, p.rects);
+    if (to === p.to) return;
+    p.to = to;
+    setDrag({ from: p.from, to });
   };
   const end = (e: PointerEvent) => {
     const p = press.current;
