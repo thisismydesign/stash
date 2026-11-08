@@ -75,11 +75,17 @@ jobs:
         env:
           SUPABASE_INTERNAL_IMAGE_REGISTRY: ghcr.io
       - run: pnpm run e2e
+      # Traces are kept for failed attempts, including those a retry made good.
       - uses: actions/upload-artifact@v7
-        if: failure()
+        if: ${{ !cancelled() }}
+        continue-on-error: true
         with:
+          overwrite: true
           name: e2e-traces
-          path: test-results/
+          path: |
+            test-results/
+            !test-results/.last-run.json
+          if-no-files-found: ignore
 
   deploy:
     if: github.event_name == 'push' && github.ref == 'refs/heads/main'
@@ -138,8 +144,14 @@ jobs:
           cache: pnpm
       - run: pnpm install --frozen-lockfile
       - run: pnpm run e2e
+      # Traces are kept for failed attempts, including those a retry made good.
       - uses: actions/upload-artifact@v7
-        if: failure()
+        if: ${{ !cancelled() }}
+        continue-on-error: true
         with:
+          overwrite: true
           name: smoke-traces
-          path: test-results/
+          path: |
+            test-results/
+            !test-results/.last-run.json
+          if-no-files-found: ignore
