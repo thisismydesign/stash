@@ -2,6 +2,9 @@ name: CI
 
 on: push
 
+env:
+  SUPABASE_CLI: 2.122.0
+
 jobs:
   lint:
     runs-on: ubuntu-latest
@@ -46,6 +49,10 @@ jobs:
   # migrations and seed, so schema changes are tested before they deploy.
   e2e:
     runs-on: ubuntu-latest
+    env:
+      SUPABASE_EXCLUDED: studio,imgproxy,postgres-meta,logflare,vector,supavisor,mailpit
+      # GHCR is next to the runners; the default registry, ECR Public, rate-limits shared runner IPs into minutes of retries.
+      SUPABASE_INTERNAL_IMAGE_REGISTRY: ghcr.io
     steps:
       - uses: actions/checkout@v7
       - uses: pnpm/action-setup@v6
@@ -55,25 +62,19 @@ jobs:
           cache: pnpm
       - uses: supabase/setup-cli@v3
         with:
-          version: 2.122.0
-      # GHCR is next to the runners; the default registry, ECR Public, rate-limits shared runner IPs into minutes of retries.
-      # GHCR throttles them too, now and then, mid-pull; images pulled before that stay cached, so a retry finishes the rest.
-      # The stack starts while the packages install; its output follows the install's.
+          version: ${{ env.SUPABASE_CLI }}
+      # The stack's images are kept from run to run: pulled once, saved after a green job, loaded before the next.
+      - uses: AndreKurait/docker-cache@e1eb0120c0c16b3f1c6ff1c0ef4ebc9f67f8dc6a # 0.7.1
+        with:
+          key: supabase-images-${{ env.SUPABASE_CLI }}-${{ env.SUPABASE_INTERNAL_IMAGE_REGISTRY }}-${{ hashFiles('supabase/config.toml') }}
+      # GHCR throttles pulls too, now and then, mid-pull; images pulled before that stay, so a retry finishes the rest.
       - run: |
-          (
-            for attempt in 1 2 3; do
-              supabase start -x studio,imgproxy,postgres-meta,logflare,vector,supavisor,mailpit && exit 0
-              [ "$attempt" -lt 3 ] && sleep $((attempt * 30))
-            done
-            exit 1
-          ) > "$RUNNER_TEMP/stack.log" 2>&1 &
-          stack=$!
-          pnpm install --frozen-lockfile || failed=1
-          wait "$stack" || failed=1
-          cat "$RUNNER_TEMP/stack.log"
-          [ -z "$failed" ]
-        env:
-          SUPABASE_INTERNAL_IMAGE_REGISTRY: ghcr.io
+          for attempt in 1 2 3; do
+            supabase start -x "$SUPABASE_EXCLUDED" && exit 0
+            [ "$attempt" -lt 3 ] && sleep $((attempt * 30))
+          done
+          exit 1
+      - run: pnpm install --frozen-lockfile
       - run: pnpm run e2e
       # Traces are kept for failed attempts, including those a retry made good.
       - uses: actions/upload-artifact@v7
@@ -108,7 +109,7 @@ jobs:
           cache: pnpm
       - uses: supabase/setup-cli@v3
         with:
-          version: 2.122.0
+          version: ${{ env.SUPABASE_CLI }}
       - run: pnpm install --frozen-lockfile
       # The Supabase VM is reachable on the tailnet only; see docs/deploy.md.
       - uses: tailscale/github-action@v3
