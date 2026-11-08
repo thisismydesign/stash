@@ -6,7 +6,7 @@ import { createClient, type Session, type SupabaseClient } from "@supabase/supab
 // eslint-disable-next-line @typescript-eslint/no-explicit-any
 type Admin = SupabaseClient<any, any, any>;
 
-export const TEST_EMAIL = process.env.STASH_TEST_EMAIL ?? "e2e@stash.test";
+const TEST_EMAIL = process.env.STASH_TEST_EMAIL ?? "e2e@stash.test";
 export const SUPABASE_URL = process.env.SUPABASE_URL ?? process.env.VITE_SUPABASE_URL;
 export const PUBLISHABLE_KEY = process.env.VITE_SUPABASE_KEY;
 const SECRET_KEY = process.env.SUPABASE_SECRET_KEY;
@@ -15,18 +15,39 @@ export const canSignIn = Boolean(SUPABASE_URL && PUBLISHABLE_KEY && SECRET_KEY);
 export const API = `${SUPABASE_URL}/functions/v1/stash`;
 export const REST = `${SUPABASE_URL}/rest/v1`;
 
+/** Each worker signs in as its own account, so specs running side by side never see each other's boards. */
+const testEmail = () => {
+  const worker = Number(process.env.TEST_PARALLEL_INDEX);
+  return worker ? TEST_EMAIL.replace("@", `+w${worker}@`) : TEST_EMAIL;
+};
+
 export const persistedSessionKey = () =>
   `sb-${new URL(SUPABASE_URL!).hostname.split(".")[0]}-auth-token`;
 
 export const admin = (): Admin =>
   createClient(SUPABASE_URL!, SECRET_KEY!, { auth: { persistSession: false } });
 
-export async function testSession(): Promise<Session> {
+// A worker's session is minted once: every test of the worker reuses it.
+let session: Promise<Session> | undefined;
+
+/** The worker's account, once a test has signed in. */
+export const signedInUser = async () => (await session)?.user.id;
+
+export function testSession(): Promise<Session> {
+  session ??= mintSession().catch((e: unknown) => {
+    session = undefined;
+    throw e;
+  });
+  return session;
+}
+
+async function mintSession(): Promise<Session> {
+  const email = testEmail();
   const db = admin();
-  const created = await db.auth.admin.createUser({ email: TEST_EMAIL, email_confirm: true });
+  const created = await db.auth.admin.createUser({ email, email_confirm: true });
   if (created.error && !/already|exists|registered/i.test(created.error.message))
     throw created.error;
-  const link = await db.auth.admin.generateLink({ type: "magiclink", email: TEST_EMAIL });
+  const link = await db.auth.admin.generateLink({ type: "magiclink", email });
   if (link.error) throw link.error;
   const anon = createClient(SUPABASE_URL!, PUBLISHABLE_KEY!, { auth: { persistSession: false } });
   const otp = await anon.auth.verifyOtp({

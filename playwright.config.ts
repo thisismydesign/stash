@@ -9,8 +9,10 @@ try {
 
 export default defineConfig({
   testDir: "e2e",
-  // One worker: every signed-in spec mints a token for the same test user, and a newer token invalidates the one before it.
-  workers: 1,
+  // Each worker signs in as its own account (see e2e/session.ts), so tests run side by side.
+  // A deployed site keeps an account per worker, so there the count is fixed.
+  fullyParallel: true,
+  workers: process.env.CI || deployedSite ? 4 : undefined,
   retries: process.env.CI ? 1 : 0,
   reporter: process.env.CI ? "github" : "list",
   use: { baseURL: deployedSite ?? "http://localhost:4199", trace: "retain-on-failure" },

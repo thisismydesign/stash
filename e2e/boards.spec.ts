@@ -4,7 +4,7 @@ import {
   API,
   REST,
   SUPABASE_URL,
-  TEST_EMAIL,
+  signedInUser,
   admin,
   canSignIn,
   restHeaders,
@@ -43,17 +43,13 @@ const content = async (request: APIRequestContext, session: Session, id: string)
   return ((await got.json()) as { content: string }[])[0].content;
 };
 
-test.describe.configure({ mode: "serial" });
-
 test.beforeEach(() => test.skip(!canSignIn, "the local stack is needed"));
-// The service key sees every account, and the smoke run points at the deployed site: only the test user's boards go.
+// The service key sees every account, and the smoke run points at the deployed site: only the worker's own boards go.
 test.afterEach(async () => {
   if (!canSignIn) return;
-  const db = admin();
-  const users = await db.auth.admin.listUsers();
-  if (users.error) throw users.error;
-  const owner = users.data.users.find((u) => u.email === TEST_EMAIL)?.id;
+  const owner = await signedInUser();
   if (!owner) return;
+  const db = admin();
   const { error } = await db.from("boards").delete().eq("owner", owner).like("title", "e2e%");
   if (error) throw new Error(error.message);
   const files = await db.storage.from("images").list(owner);

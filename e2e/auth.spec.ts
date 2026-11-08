@@ -9,7 +9,7 @@ import {
   resetThrottle,
 } from "./session.ts";
 
-// Creating accounts is for the local stack: the deployed site keeps only the test user.
+// Creating accounts is for the local stack: the deployed site keeps only the test accounts.
 const local = !process.env.E2E_BASE_URL;
 const password = () => `pw-${crypto.randomUUID()}`;
 

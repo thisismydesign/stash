@@ -1,6 +1,14 @@
 import { expect, test, type APIRequestContext } from "@playwright/test";
 import type { Session } from "@supabase/supabase-js";
-import { REST, TEST_EMAIL, admin, canSignIn, restHeaders, signIn } from "./session.ts";
+import {
+  REST,
+  admin,
+  canSignIn,
+  deleteUser,
+  restHeaders,
+  signIn,
+  signedInUser,
+} from "./session.ts";
 
 const COLUMNS = [
   { key: "date", name: "Date", type: "date" },
@@ -45,16 +53,12 @@ const rows = async (request: APIRequestContext, session: Session, id: string) =>
   return ((await got.json()) as { data: Record<string, unknown> }[]).map((r) => r.data);
 };
 
-test.describe.configure({ mode: "serial" });
-
 test.beforeEach(() => test.skip(!canSignIn, "the local stack is needed"));
 test.afterEach(async () => {
   if (!canSignIn) return;
-  const db = admin();
-  const users = await db.auth.admin.listUsers();
-  if (users.error) throw users.error;
-  const owner = users.data.users.find((u) => u.email === TEST_EMAIL)?.id;
+  const owner = await signedInUser();
   if (!owner) return;
+  const db = admin();
   const { error } = await db.from("boards").delete().eq("owner", owner).like("title", "e2e%");
   if (error) throw new Error(error.message);
 });
@@ -381,8 +385,6 @@ test("shows a shared table's rows, and keeps rows to their owner's own tables", 
     });
     expect(await peek.json()).toEqual([]);
   } finally {
-    const users = await db.auth.admin.listUsers();
-    const id = users.data?.users.find((u) => u.email === "e2e-other@stash.test")?.id;
-    if (id) await db.auth.admin.deleteUser(id);
+    await deleteUser("e2e-other@stash.test");
   }
 });

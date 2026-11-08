@@ -58,15 +58,22 @@ jobs:
           version: 2.122.0
       # GHCR is next to the runners; the default registry, ECR Public, rate-limits shared runner IPs into minutes of retries.
       # GHCR throttles them too, now and then, mid-pull; images pulled before that stay cached, so a retry finishes the rest.
+      # The stack starts while the packages install; its output follows the install's.
       - run: |
-          for attempt in 1 2 3; do
-            supabase start -x studio,imgproxy,postgres-meta,logflare,vector,supavisor,mailpit && exit 0
-            [ "$attempt" -lt 3 ] && sleep $((attempt * 30))
-          done
-          exit 1
+          (
+            for attempt in 1 2 3; do
+              supabase start -x studio,imgproxy,postgres-meta,logflare,vector,supavisor,mailpit && exit 0
+              [ "$attempt" -lt 3 ] && sleep $((attempt * 30))
+            done
+            exit 1
+          ) > "$RUNNER_TEMP/stack.log" 2>&1 &
+          stack=$!
+          pnpm install --frozen-lockfile || failed=1
+          wait "$stack" || failed=1
+          cat "$RUNNER_TEMP/stack.log"
+          [ -z "$failed" ]
         env:
           SUPABASE_INTERNAL_IMAGE_REGISTRY: ghcr.io
-      - run: pnpm install --frozen-lockfile
       - run: pnpm run e2e
       - uses: actions/upload-artifact@v7
         if: failure()
