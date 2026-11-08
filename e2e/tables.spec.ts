@@ -237,9 +237,27 @@ test("makes an empty table, gives it columns, and removes one with its cells", a
   await page.mouse.up();
   await expect(page.getByRole("textbox", { name: "Name" }).first()).toHaveValue("Amount");
   await page.getByLabel("Description").fill("Money **in and out**, for the return.");
+  // A choice column's options each wear a colour, picked from a swatch.
+  await page.getByRole("button", { name: "Add column" }).click();
+  await page.getByRole("textbox", { name: "Name" }).last().fill("Kind");
+  await page.getByLabel("Type").last().selectOption("select");
+  await page.getByRole("combobox", { name: "Choices" }).fill("Income");
+  await page.keyboard.press("Enter");
+  await page.getByRole("button", { name: "Colour of Income" }).click();
+  await page.getByRole("button", { name: "green", exact: true }).click();
   await page.getByRole("button", { name: "Done" }).click();
   await expect(page.getByRole("columnheader").first()).toContainText("Amount");
   await expect(page.locator("strong", { hasText: "in and out" })).toBeVisible();
+  const got = await request.get(`${REST}/boards?id=eq.${id}&select=columns`, {
+    headers: restHeaders(session),
+  });
+  expect(((await got.json()) as { columns: unknown[] }[])[0].columns[2]).toEqual({
+    key: "kind",
+    name: "Kind",
+    type: "select",
+    options: ["Income"],
+    colors: { Income: "green" },
+  });
   await expect(page.getByRole("columnheader", { name: "Paid on" })).toBeVisible();
   await page.getByRole("button", { name: "Add row" }).click();
   await page.getByRole("textbox", { name: "Amount" }).fill("12.5");
@@ -294,6 +312,13 @@ test("the database turns away cells that do not fit their columns, whoever write
   expect((await columns([{ key: "x", name: "X", type: "interval" }])).status()).toBe(400);
   expect((await columns([{ key: "x", name: "X", type: "text", extra: 1 }])).status()).toBe(400);
   expect((await columns([{ key: "x", name: "X", type: "text", width: 10 }])).status()).toBe(400);
+  expect(
+    (
+      await columns([
+        { key: "x", name: "X", type: "select", options: ["A"], colors: { A: "magenta" } },
+      ])
+    ).status(),
+  ).toBe(400);
   expect(
     await message(
       await columns(COLUMNS.map((c) => (c.key === "amount" ? { ...c, type: "text" } : c))),

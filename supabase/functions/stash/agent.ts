@@ -19,7 +19,7 @@ A board is one row in \`boards\`: \`title\`, \`kind\`, \`content\`, \`descriptio
   - \`number\` — a JSON number; \`"decimals": 2\` on the column fixes how many are shown. Money is a number plus a currency column; money out is negative.
   - \`date\` — \`"YYYY-MM-DD"\`
   - \`checkbox\` — \`true\` or \`false\`
-  - \`select\` — one of the column's \`"options": [...]\`
+  - \`select\` — one of the column's \`"options": [...]\`; each shows in a colour of its own, or the one the column's \`"colors": {"Travel": "orange"}\` names (red, pink, grape, violet, indigo, blue, cyan, teal, green, lime, yellow, orange, gray)
   - \`url\` — a link
   A column may also carry \`"width"\`, how wide it shows in pixels. Cells of a type other than written read as text, so get the type right before writing rows: the database rejects a cell of the wrong type, a choice not among the column's options, and a key no column has, with a message saying which. \`[]\` for every other kind.
 - \`tags\` is a list of short lower-case labels (for example \`travel\`, \`home\`, \`cars\`); the app colours and filters by them. Reuse what exists before inventing new ones: list the boards first.

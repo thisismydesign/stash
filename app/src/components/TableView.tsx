@@ -29,6 +29,7 @@ import {
   COLUMN_WIDTH,
   MIN_COLUMN_WIDTH,
   MAX_COLUMN_WIDTH,
+  choiceColor,
   isLink,
   toCell,
   type Cell,
@@ -218,7 +219,7 @@ function Filters({
                   >
                     <Group gap={6}>
                       {(c.options ?? []).map((o) => (
-                        <Chip key={o} value={o} size="xs">
+                        <Chip key={o} value={o} size="xs" color={choiceColor(c, o)}>
                           {o}
                         </Chip>
                       ))}
@@ -305,7 +306,7 @@ function Shown({ column, value }: { column: Column; value: Cell | undefined }) {
     );
   if (column.type === "select")
     return (
-      <Badge variant="light" color="gray" size="sm" tt="none">
+      <Badge variant="light" color={choiceColor(column, String(value))} size="sm" tt="none">
         {formatCell(column, value)}
       </Badge>
     );

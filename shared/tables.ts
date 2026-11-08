@@ -77,10 +77,44 @@ export interface Column {
   type: ColumnType;
   /** For `select`: what a cell may be. */
   options?: string[];
+  /** For `select`: a colour per option, from `CHOICE_COLORS`; an option left out gets one from its name. */
+  colors?: Record<string, ChoiceColor>;
   /** For `number`: how many decimals a cell shows. */
   decimals?: number;
   /** How wide the column shows, in pixels. */
   width?: number;
+}
+
+/** The colours a choice may wear; the check on `columns` mirrors the list. */
+export const CHOICE_COLORS = [
+  "red",
+  "pink",
+  "grape",
+  "violet",
+  "indigo",
+  "blue",
+  "cyan",
+  "teal",
+  "green",
+  "lime",
+  "yellow",
+  "orange",
+  "gray",
+] as const;
+export type ChoiceColor = (typeof CHOICE_COLORS)[number];
+export const isChoiceColor = (v: unknown): v is ChoiceColor =>
+  typeof v === "string" && (CHOICE_COLORS as readonly string[]).includes(v);
+
+/** What a choice is given by its name: anything but gray, which reads as unset. */
+const AUTO_COLORS = CHOICE_COLORS.filter((c) => c !== "gray");
+
+/** The colour a choice wears: the column's, or one from its name, the same wherever it shows. */
+export function choiceColor(column: Column, option: string): ChoiceColor {
+  const chosen = column.colors?.[option];
+  if (chosen) return chosen;
+  let hash = 0;
+  for (const ch of option) hash = (hash * 31 + ch.codePointAt(0)!) >>> 0;
+  return AUTO_COLORS[hash % AUTO_COLORS.length];
 }
 
 /** What a column shows as without a `width` of its own, and the least it may be dragged to; the check on `columns` mirrors the bounds. */
@@ -121,10 +155,16 @@ export function readColumns(value: unknown): Column[] {
       name: typeof c.name === "string" && c.name !== "" ? c.name : c.key,
       type: c.type,
     };
-    if (column.type === "select")
+    if (column.type === "select") {
       column.options = Array.isArray(c.options)
         ? c.options.filter((o): o is string => typeof o === "string")
         : [];
+      if (isObject(c.colors)) {
+        const colors = Object.entries(c.colors).filter(([, v]) => isChoiceColor(v));
+        if (colors.length)
+          column.colors = Object.fromEntries(colors) as Record<string, ChoiceColor>;
+      }
+    }
     if (column.type === "number" && typeof c.decimals === "number" && c.decimals >= 0)
       column.decimals = Math.min(10, Math.floor(c.decimals));
     if (typeof c.width === "number" && c.width >= MIN_COLUMN_WIDTH && c.width <= MAX_COLUMN_WIDTH)

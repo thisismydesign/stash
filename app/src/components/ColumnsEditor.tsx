@@ -1,11 +1,14 @@
 import {
   ActionIcon,
+  Badge,
   Button,
+  ColorSwatch,
   Group,
   Modal,
   NativeSelect,
   NumberInput,
   Paper,
+  Popover,
   Stack,
   TagsInput,
   Text,
@@ -13,7 +16,15 @@ import {
 } from "@mantine/core";
 import { IconGripVertical, IconPlus, IconTrash } from "@tabler/icons-react";
 import { useRef, useState } from "react";
-import { COLUMN_TYPES, columnKey, type Column, type ColumnType } from "@shared/tables.ts";
+import {
+  CHOICE_COLORS,
+  COLUMN_TYPES,
+  choiceColor,
+  columnKey,
+  type ChoiceColor,
+  type Column,
+  type ColumnType,
+} from "@shared/tables.ts";
 import { moveItem } from "../lib/table.ts";
 import { useDragOrder } from "../lib/useDragOrder.ts";
 
@@ -27,6 +38,52 @@ const TYPE_LABEL: Record<ColumnType, string> = {
   select: "Choice",
   url: "Link",
 };
+
+/** A choice as it shows, and a press on it picks another colour. */
+function ChoiceColorPicker({
+  column,
+  option,
+  onPick,
+}: {
+  column: Column;
+  option: string;
+  onPick: (color: ChoiceColor) => void;
+}) {
+  return (
+    <Popover position="bottom-start" shadow="md" withArrow>
+      <Popover.Target>
+        <Badge
+          component="button"
+          type="button"
+          variant="light"
+          color={choiceColor(column, option)}
+          size="sm"
+          tt="none"
+          aria-label={`Colour of ${option}`}
+          style={{ cursor: "pointer" }}
+        >
+          {option}
+        </Badge>
+      </Popover.Target>
+      <Popover.Dropdown p="xs">
+        <Group gap={6} maw={200}>
+          {CHOICE_COLORS.map((color) => (
+            <ColorSwatch
+              key={color}
+              component="button"
+              type="button"
+              size={22}
+              color={`var(--mantine-color-${color}-6)`}
+              aria-label={color}
+              onClick={() => onPick(color)}
+              style={{ cursor: "pointer" }}
+            />
+          ))}
+        </Group>
+      </Popover.Dropdown>
+    </Popover>
+  );
+}
 
 /** A table's columns, to add, rename, retype or drop. A column's key follows its name until the editing is over, then stays, so rows keep their cells. */
 export function ColumnsEditor({
@@ -59,6 +116,7 @@ export function ColumnsEditor({
   const retype = (i: number, type: ColumnType) => {
     const column: Column = { ...columns[i], type };
     delete column.options;
+    delete column.colors;
     delete column.decimals;
     if (type === "select") column.options = [];
     set(i, column);
@@ -117,13 +175,34 @@ export function ColumnsEditor({
               </ActionIcon>
             </Group>
             {c.type === "select" && (
-              <TagsInput
-                label="Choices"
-                size="xs"
-                value={c.options ?? []}
-                onChange={(options) => set(i, { ...c, options })}
-                placeholder="Type one and press Enter"
-              />
+              <>
+                <TagsInput
+                  label="Choices"
+                  size="xs"
+                  value={c.options ?? []}
+                  onChange={(options) => {
+                    const colors = Object.fromEntries(
+                      Object.entries(c.colors ?? {}).filter(([o]) => options.includes(o)),
+                    );
+                    const column: Column = { ...c, options, colors };
+                    if (Object.keys(colors).length === 0) delete column.colors;
+                    set(i, column);
+                  }}
+                  placeholder="Type one and press Enter"
+                />
+                {(c.options ?? []).length > 0 && (
+                  <Group gap={6}>
+                    {(c.options ?? []).map((o, n) => (
+                      <ChoiceColorPicker
+                        key={n}
+                        column={c}
+                        option={o}
+                        onPick={(color) => set(i, { ...c, colors: { ...c.colors, [o]: color } })}
+                      />
+                    ))}
+                  </Group>
+                )}
+              </>
             )}
             {c.type === "number" && (
               <NumberInput

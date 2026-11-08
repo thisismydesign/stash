@@ -1,6 +1,6 @@
 import assert from "node:assert/strict";
 import { test } from "node:test";
-import { columnKey, readColumns, toCell, type Column } from "../shared/tables.ts";
+import { choiceColor, columnKey, readColumns, toCell, type Column } from "../shared/tables.ts";
 import { csvFileName, toCsv } from "../app/src/lib/csv.ts";
 import { moveItem, passes, total } from "../app/src/lib/table.ts";
 
@@ -29,6 +29,13 @@ test("readColumns keeps well-formed columns and drops the rest", () => {
       { key: "date", name: "Date", type: "date" },
       { key: "amount", type: "number", decimals: 2.7 },
       { key: "currency", name: "Currency", type: "select", options: ["EUR", 3] },
+      {
+        key: "kind",
+        name: "Kind",
+        type: "select",
+        options: ["In", "Out"],
+        colors: { In: "green", Out: "magenta", Odd: 3 },
+      },
       { key: "date", name: "Again", type: "text" },
       { key: "", name: "Nameless", type: "text" },
       { key: "odd", name: "Odd", type: "interval" },
@@ -40,6 +47,13 @@ test("readColumns keeps well-formed columns and drops the rest", () => {
       { key: "date", name: "Date", type: "date" },
       { key: "amount", name: "amount", type: "number", decimals: 2 },
       { key: "currency", name: "Currency", type: "select", options: ["EUR"] },
+      {
+        key: "kind",
+        name: "Kind",
+        type: "select",
+        options: ["In", "Out"],
+        colors: { In: "green" },
+      },
       { key: "wide", name: "Wide", type: "text", width: 240 },
       { key: "thin", name: "Thin", type: "text" },
     ],
@@ -102,4 +116,17 @@ test("moveItem puts an item where it was dropped", () => {
   assert.deepEqual(moveItem(["a", "b", "c", "d"], 0, 2), ["b", "c", "a", "d"]);
   assert.deepEqual(moveItem(["a", "b", "c", "d"], 3, 0), ["d", "a", "b", "c"]);
   assert.deepEqual(moveItem(["a", "b", "c", "d"], 1, 1), ["a", "b", "c", "d"]);
+});
+
+test("choiceColor is the column's, or stable from the name", () => {
+  const column: Column = {
+    key: "k",
+    name: "K",
+    type: "select",
+    options: [],
+    colors: { In: "green" },
+  };
+  assert.equal(choiceColor(column, "In"), "green");
+  assert.equal(choiceColor(column, "Travel"), choiceColor({ ...column, colors: {} }, "Travel"));
+  assert.notEqual(choiceColor(column, "Travel"), "gray");
 });

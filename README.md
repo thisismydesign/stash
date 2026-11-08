@@ -52,7 +52,7 @@ A page of your own, rendered in a sandbox: mood boards, comparisons, anything wi
 
 ### Table
 
-Records with typed columns: text, number, date, checkbox, choice or link. Tap a cell to change it, a heading to sort, drag a heading to move its column or its edge to widen it (double-click the edge to fit), filter by text, choice, checkbox or date range, and the numbers add up at the bottom. The menu downloads it as CSV. Your agent adds a row with one request, and the database turns away a cell that does not fit its column.
+Records with typed columns: text, number, date, checkbox, colour-coded choice or link. Tap a cell to change it, a heading to sort, drag a heading to move its column or its edge to widen it (double-click the edge to fit), filter by text, choice, checkbox or date range, and the numbers add up at the bottom. The menu downloads it as CSV. Your agent adds a row with one request, and the database turns away a cell that does not fit its column.
 
 ### Sharing
 
