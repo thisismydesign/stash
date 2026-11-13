@@ -4,14 +4,16 @@ import {
   Anchor,
   Button,
   Center,
+  CopyButton,
   Menu,
   Modal,
   Paper,
   PasswordInput,
-  SegmentedControl,
+  SimpleGrid,
   Stack,
   Tabs,
   Text,
+  Textarea,
   TextInput,
   Title,
 } from "@mantine/core";
@@ -20,18 +22,52 @@ import { useEffect, useState } from "react";
 import { MIN_PASSWORD_LENGTH } from "@shared/api.ts";
 import { AgentKeys } from "./AgentKeys.tsx";
 import { Logo } from "./Logo.tsx";
-import { signInAsDevAccount, signUp, supabase, useSession } from "./lib/supabase.ts";
+import { API_BASE, signInAsDevAccount, signUp, supabase, useSession } from "./lib/supabase.ts";
 
-const AUTH_MODES = [
-  { value: "signin", label: "Sign in" },
-  { value: "signup", label: "Sign up" },
-] as const;
-type AuthMode = (typeof AUTH_MODES)[number]["value"];
+type AuthMode = "signin" | "signup" | "agent";
+const TITLES: Record<AuthMode, string> = {
+  agent: "Welcome to Stash",
+  signin: "Sign in to Stash",
+  signup: "Sign up for Stash",
+};
 
-/** Asks the header's Sign in button to open, in the mode given as `detail`. */
+/** Asks the header's Sign in button to open. */
 const OPEN_SIGN_IN = "stash:sign-in";
 
-function PasswordForm({ mode }: { mode: AuthMode }) {
+// Spelled out rather than "fetch this URL and follow it", so the user can read what they hand their agent.
+const ONBOARD_PROMPT = `Set up a Stash account for me. Stash (${location.origin}) is my personal notepad: boards of notes, lists and ideas, which you keep for me.
+
+1. Ask me for my email address, and whether I want to choose a password or have Stash make one.
+2. Create the account: POST ${API_BASE}/signup with JSON {"email", "password" (optional)}. The API is described at ${API_BASE}/openapi.json.
+3. Tell me the email and password to sign in with at ${location.origin}. Store session.refresh_token from the response somewhere durable, and tell me where.
+
+How to keep my boards for me afterwards is at ${location.origin}/llms.txt.`;
+
+function AgentOnboarding() {
+  return (
+    <Stack gap="xs">
+      <Textarea
+        aria-label="Instructions for your agent"
+        value={ONBOARD_PROMPT}
+        readOnly
+        autosize
+        minRows={8}
+        maxRows={14}
+        size="xs"
+        styles={{ input: { fontFamily: "var(--mantine-font-family-monospace)", fontSize: 11 } }}
+      />
+      <CopyButton value={ONBOARD_PROMPT}>
+        {({ copied, copy }) => (
+          <Button size="xs" onClick={copy}>
+            {copied ? "Copied" : "Copy instructions"}
+          </Button>
+        )}
+      </CopyButton>
+    </Stack>
+  );
+}
+
+function PasswordForm({ mode }: { mode: Exclude<AuthMode, "agent"> }) {
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
   const [error, setError] = useState<string>();
@@ -122,7 +158,7 @@ export function ExampleNotice() {
         <Anchor
           component="button"
           size="sm"
-          onClick={() => window.dispatchEvent(new CustomEvent(OPEN_SIGN_IN, { detail: "signup" }))}
+          onClick={() => window.dispatchEvent(new Event(OPEN_SIGN_IN))}
         >
           Sign up to keep your own.
         </Anchor>
@@ -133,36 +169,47 @@ export function ExampleNotice() {
 
 function SignInButton() {
   const [opened, setOpened] = useState(false);
-  const [mode, setMode] = useState<AuthMode>("signin");
-  const open = (as: AuthMode) => {
-    setMode(as);
+  const [mode, setMode] = useState<AuthMode>("agent");
+  const open = () => {
+    setMode("agent");
     setOpened(true);
   };
   useEffect(() => {
-    const onOpen = (e: Event) => open((e as CustomEvent<AuthMode>).detail ?? "signin");
-    window.addEventListener(OPEN_SIGN_IN, onOpen);
-    return () => window.removeEventListener(OPEN_SIGN_IN, onOpen);
+    window.addEventListener(OPEN_SIGN_IN, open);
+    return () => window.removeEventListener(OPEN_SIGN_IN, open);
   }, []);
+  const choice = (value: AuthMode, label: string) => (
+    <Button
+      size="xs"
+      fullWidth
+      variant="default"
+      bg={mode === value ? "var(--mantine-color-default-hover)" : undefined}
+      aria-pressed={mode === value}
+      onClick={() => setMode(value)}
+    >
+      {label}
+    </Button>
+  );
   return (
     <>
-      <Button variant="default" size="xs" onClick={() => open("signin")}>
+      <Button variant="default" size="xs" onClick={open}>
         Sign in
       </Button>
       <Modal
         opened={opened}
         onClose={() => setOpened(false)}
-        title={<Text fw={700}>{mode === "signup" ? "Sign up for Stash" : "Sign in to Stash"}</Text>}
+        title={<Text fw={700}>{TITLES[mode]}</Text>}
         size="xs"
       >
         <Stack gap="sm">
-          <SegmentedControl
-            fullWidth
-            size="xs"
-            value={mode}
-            onChange={(v) => setMode(v as AuthMode)}
-            data={[...AUTH_MODES]}
-          />
-          <PasswordForm key={mode} mode={mode} />
+          <Stack gap={6}>
+            {choice("agent", "Onboard with your AI agent")}
+            <SimpleGrid cols={2} spacing={6}>
+              {choice("signin", "Sign in")}
+              {choice("signup", "Sign up")}
+            </SimpleGrid>
+          </Stack>
+          {mode === "agent" ? <AgentOnboarding /> : <PasswordForm key={mode} mode={mode} />}
         </Stack>
       </Modal>
     </>

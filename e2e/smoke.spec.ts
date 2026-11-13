@@ -22,6 +22,11 @@ test("shows a visitor the example boards and offers to sign in", async ({ page }
   expect(sent).toEqual([]);
   await page.getByRole("button", { name: "Sign up to keep your own." }).click();
   const dialog = page.getByRole("dialog");
+  await expect(dialog.getByRole("heading", { name: "Welcome to Stash" })).toBeVisible();
+  await expect(dialog.getByLabel("Instructions for your agent")).toHaveValue(
+    /POST \S+\/functions\/v1\/stash\/signup/,
+  );
+  await dialog.getByRole("button", { name: "Sign up", exact: true }).click();
   await expect(dialog.getByRole("heading", { name: "Sign up for Stash" })).toBeVisible();
   await expect(dialog.getByRole("button", { name: "Create account" })).toBeVisible();
 });
