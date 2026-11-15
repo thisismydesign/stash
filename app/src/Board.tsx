@@ -24,10 +24,11 @@ import { Picture } from "./components/Picture.tsx";
 import { Markdown } from "./components/Markdown.tsx";
 import { MarkdownEditor } from "./components/MarkdownEditor.tsx";
 import { TableView } from "./components/TableView.tsx";
+import { Todo, type ActiveTab, type TabEdits } from "./components/Todo.tsx";
 import { useBoards } from "./lib/boards.tsx";
 import { ago } from "./lib/format.ts";
 import { useRows, type RowEdits } from "./lib/rows.tsx";
-import { settle, toggleTask } from "./lib/todo.ts";
+import { addTab, settle, toggleTab, toggleTask } from "./lib/todo.ts";
 import { useLocalState } from "./lib/useLocalState.ts";
 import { KIND_COLOR, KIND_LABEL, tagColors } from "./theme.ts";
 
@@ -70,15 +71,20 @@ export type TableRows = {
   onError?: (message: string) => void;
 };
 
+/** A todo's tabs as they can be changed, and the one showing, kept by the page so it outlasts an edit. */
+export type TodoTabs = { edit: TabEdits; active: [ActiveTab, (tab: ActiveTab) => void] };
+
 /** The board as read; with `onToggle`, a todo's boxes are live. A table shows `table`. */
 export function BoardContent({
   board,
   onToggle,
   table,
+  tabs,
 }: {
   board: SharedBoard;
   onToggle?: (line: number) => void;
   table?: TableRows;
+  tabs?: TodoTabs;
 }) {
   if (board.kind === "html") return <HtmlView html={board.content} title={board.title} />;
   if (board.kind === "table") {
@@ -107,6 +113,10 @@ export function BoardContent({
       />
     );
   }
+  if (board.kind === "todo")
+    return (
+      <Todo content={board.content} onToggle={onToggle} edit={tabs?.edit} active={tabs?.active} />
+    );
   if (board.content.trim() === "") return <Text c="dimmed">Nothing here yet.</Text>;
   return <Markdown onToggle={onToggle}>{board.content}</Markdown>;
 }
@@ -210,6 +220,7 @@ export function BoardPage({ id, onBack }: { id: string; onBack: () => void }) {
   const [error, setError] = useState<string>();
   const [saving, setSaving] = useState(0);
   const opened = useRef<string>(undefined);
+  const activeTab = useState<ActiveTab>(0);
   // Only typing is saved: a draft left untouched must not overwrite what someone else wrote meanwhile.
   const written = useRef<Draft>(undefined);
   const dirty = !!draft && draft !== written.current;
@@ -294,9 +305,14 @@ export function BoardPage({ id, onBack }: { id: string; onBack: () => void }) {
       await update(board.id, inputOf(draft, board));
       setDraft(null);
     });
+  const write = (content: string) => void run(() => update(board.id, { content }));
   const toggle = (line: number) => {
     const next = toggleTask(board.content, line);
-    void run(() => update(board.id, { content: board.kind === "todo" ? settle(next) : next }));
+    write(board.kind === "todo" ? settle(next) : next);
+  };
+  const tabEdits: TabEdits = {
+    onDone: (line) => write(settle(toggleTab(board.content, line))),
+    onAdd: (title) => write(addTab(board.content, title)),
   };
 
   return (
@@ -389,6 +405,7 @@ export function BoardPage({ id, onBack }: { id: string; onBack: () => void }) {
           <BoardContent
             board={board}
             onToggle={toggle}
+            tabs={{ edit: tabEdits, active: activeTab }}
             table={{
               rows,
               error: rowsError,

@@ -1,3 +1,5 @@
+# General
+
 - [ ] Renew passport, expires in March
 - [ ] Book dentist check-up
 - [ ] Return the library books
@@ -13,3 +15,31 @@
 
 - [x] Pay the electricity bill
 - [x] Change the car insurance
+
+# Shopping
+
+- [ ] Oat milk
+- [ ] Eggs
+- [ ] Coffee beans
+- [ ] Dishwasher tablets
+- [ ] AA batteries
+
+## Done
+
+- [x] Olive oil
+
+# Waiting for
+
+- [ ] Refund from the airline, claimed on the 3rd
+- [ ] Anna to confirm the dinner date
+- [ ] The plumber's quote for the bathroom
+
+# ~~Tax return 2025~~
+
+Filed on the 12th; the refund came in three weeks.
+
+## Done
+
+- [x] Collect the invoices
+- [x] Send everything to the accountant
+- [x] Sign and file

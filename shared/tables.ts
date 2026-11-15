@@ -2,7 +2,7 @@
 
 /**
  * Each kind has a renderer:
- * todo     — a Markdown task list; ticked items move under `## Done`
+ * todo     — a Markdown task list; ticked items move under `## Done`, and `# ` headings are its tabs
  * markdown — rendered Markdown
  * html     — a document, rendered in a sandbox
  * table    — typed `columns`; its rows are in `rows`, one `data` object each

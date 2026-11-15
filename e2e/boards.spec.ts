@@ -135,7 +135,48 @@ test("ticks a task under Done and brings it back", async ({ page, request }) => 
   await page.getByRole("checkbox", { name: "Done" }).click();
   await expect
     .poll(() => content(request, session, id))
-    .toBe("- [ ] Visa\n- [ ] Bike\n  - [ ] Helmet\n- [ ] Pillow\n\n## Done\n\n");
+    .toBe("- [ ] Visa\n- [ ] Bike\n  - [ ] Helmet\n- [ ] Pillow\n\n## Done\n");
+});
+
+test("keeps a to-do's tabs apart, marks one done and adds one", async ({ page, request }) => {
+  const session = await signIn(page);
+  const shopping = "# Shopping\n\n- [ ] Milk";
+  const id = await seed(request, session, {
+    title: "e2e Tabs",
+    kind: "todo",
+    content: `${shopping}\n\n# Laptop\n\nBudget **1500**.\n\n- [ ] Order\n`,
+  });
+  await open(page, "e2e Tabs");
+  await expect(page.getByText("Milk")).toBeVisible();
+  await expect(page.getByText("Order")).toBeHidden();
+  await page.getByRole("tab", { name: /^Laptop/ }).click();
+  await expect(page.getByText("Budget 1500.")).toBeVisible();
+  await page.getByRole("checkbox").click();
+  const laptop = "\n\nBudget **1500**.\n\n## Done\n\n- [x] Order\n";
+  const ticked = `${shopping}\n\n# Laptop${laptop}`;
+  await expect.poll(() => content(request, session, id)).toBe(ticked);
+
+  await page.getByRole("button", { name: "Mark tab done" }).click();
+  await expect
+    .poll(() => content(request, session, id))
+    .toBe(`${shopping}\n\n# ~~Laptop~~${laptop}`);
+  await expect(page.getByRole("tab", { name: /^Shopping/ })).toHaveAttribute(
+    "aria-selected",
+    "true",
+  );
+  await page.getByRole("tab", { name: /^Done/ }).click();
+  await page.getByRole("button", { name: "Laptop" }).click();
+  await page.getByRole("button", { name: "Reopen" }).click();
+  await expect.poll(() => content(request, session, id)).toBe(ticked);
+
+  await page.getByRole("button", { name: "Add tab" }).click();
+  await page.getByLabel("Tab name").fill("Waiting for");
+  await page.getByRole("button", { name: "Add", exact: true }).click();
+  await expect(page.getByRole("tab", { name: "Waiting for" })).toHaveAttribute(
+    "aria-selected",
+    "true",
+  );
+  await expect.poll(() => content(request, session, id)).toBe(`${ticked}\n# Waiting for\n`);
 });
 
 test("adds a task with Enter in the formatted editor", async ({ page, request }) => {

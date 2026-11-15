@@ -10,7 +10,7 @@ A board is one row in \`boards\`: \`title\`, \`kind\`, \`content\`, \`descriptio
 - \`description\` is a line or two about the board in Markdown, shown under its title; empty for none.
 - \`content\` is the whole board as text. Read it, change it, write it back whole. A \`table\` keeps it empty: its data is in \`columns\` and \`rows\`.
 - \`kind\` is one of:
-  - \`todo\` — a Markdown task list. Items are \`- [ ] text\`; nested items indent two spaces under their parent. Ticked items are \`- [x]\` and live under a \`## Done\` heading at the end; the app moves whole top-level items there when ticked and back when unticked. Open items stay above the heading. Headings and plain lines may group items.
+  - \`todo\` — a Markdown task list. Items are \`- [ ] text\`; nested items indent two spaces under their parent. Ticked items are \`- [x]\` and live under a \`## Done\` heading at the end; the app moves whole top-level items there when ticked and back when unticked. Open items stay above the heading. Smaller headings and plain lines may group items. A \`# Name\` heading starts a tab: the lines up to the next one are that tab's own list, with a \`## Done\` of its own and any Markdown as notes; lines before the first tab show above the tabs. A tab finished as a whole has its heading struck through, \`# ~~Name~~\`, and sits after the open tabs, newest first; the app collects those under Done.
   - \`markdown\` — free-form notes, rendered with GitHub-flavoured Markdown.
   - \`html\` — a complete document, rendered in a sandboxed iframe (scripts run, no access to the app); the app calls it a page. Inline styles and scripts, absolute URLs for images, \`color-scheme: light dark\` so it reads in either theme. The app starts people off with templates (a mood board of pictures, a comparison, a recipe, a timeline); design yours to fit what the user asked for.
   - \`table\` — a table of records, such as transactions for a tax return: \`columns\` says what each row holds, and the rows are rows of their own (below), so you add one with one request.
@@ -30,8 +30,8 @@ A board is one row in \`boards\`: \`title\`, \`kind\`, \`content\`, \`descriptio
 ## Writing for the user
 
 - Keep the user's words. They dictate, so a word may be misspelled or be a sound-alike of the one meant; carry it over as given unless the intent is clear, and ask when a different reading would change the board.
-- Add to boards rather than rewriting them. New to-do items go at the end of the open list, or under the heading they belong to.
-- When something is done, tick it (\`- [x]\`) and move the item under \`## Done\`.
+- Add to boards rather than rewriting them. New to-do items go at the end of the open list of the tab they belong to, or under their heading there; a new tab goes after the open ones.
+- When something is done, tick it (\`- [x]\`) and move the item under its tab's \`## Done\`. When a whole tab is done, strike its heading through (\`# ~~Name~~\`) and move the tab after the open ones.
 
 ## Access
 
