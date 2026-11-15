@@ -30,6 +30,7 @@ import { ago } from "./lib/format.ts";
 import { useRows, type RowEdits } from "./lib/rows.tsx";
 import { addTab, settle, toggleTab, toggleTask } from "./lib/todo.ts";
 import { useLocalState } from "./lib/useLocalState.ts";
+import { usePageTitle } from "./lib/usePageTitle.ts";
 import { KIND_COLOR, KIND_LABEL, tagColors } from "./theme.ts";
 
 type Draft = {
@@ -214,6 +215,7 @@ function Editor({
 export function BoardPage({ id, onBack }: { id: string; onBack: () => void }) {
   const { boards, update, pictureSrc } = useBoards();
   const board = boards?.find((b) => b.id === id);
+  usePageTitle(board?.title);
   const { rows, error: rowsError, ...rowEdits } = useRows(board?.kind === "table" ? id : undefined);
   const [draft, setDraft] = useState<Draft | null>(null);
   const [busy, setBusy] = useState(false);

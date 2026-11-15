@@ -61,6 +61,7 @@ async function open(page: Page, title: string) {
   await page.goto("/");
   await page.getByRole("button", { name: new RegExp(`^${title}`) }).click();
   await expect(page.getByRole("heading", { name: title })).toBeVisible();
+  await expect(page).toHaveTitle(`${title} | Stash`);
 }
 
 test("shows boards as tiles and as a list, filtered by tag, pinned on top", async ({
@@ -239,6 +240,7 @@ test("makes a board, writes it formatted and as source, and deletes it", async (
   await page.getByText("Source", { exact: true }).click();
   await page.getByLabel("Content").fill("# Left mid-edit");
   await page.getByRole("main").getByRole("button", { name: "All boards" }).click();
+  await expect(page).toHaveTitle("Stash");
   await expect.poll(() => content(request, session, id)).toBe("# Left mid-edit");
   await page.getByRole("button", { name: /^e2e Renamed/ }).click();
 
@@ -330,6 +332,7 @@ test("shares a board by link until sharing is turned off", async ({ page, reques
   const guest = await reader.newPage();
   await guest.goto(link);
   await expect(guest.getByRole("heading", { name: "e2e Shared" })).toBeVisible();
+  await expect(guest).toHaveTitle("e2e Shared | Stash");
   await expect(guest.getByText("Meet at noon.")).toBeVisible();
   await expect(guest.getByText("e2e-team")).toBeVisible();
   await expect(guest.getByText("You are looking at example boards.")).toBeHidden();

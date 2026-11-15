@@ -9,6 +9,7 @@ import { Picture } from "./components/Picture.tsx";
 import { ago } from "./lib/format.ts";
 import { useSharedRows } from "./lib/rows.tsx";
 import { API_BASE, supabase } from "./lib/supabase.ts";
+import { usePageTitle } from "./lib/usePageTitle.ts";
 import { useReloadOnReturn } from "./lib/useReloadOnReturn.ts";
 import { tagColors } from "./theme.ts";
 
@@ -43,6 +44,7 @@ export function SharedBoardPage({ token, onBack }: { token: string; onBack: () =
     void load();
   }, [load]);
   useReloadOnReturn(load);
+  usePageTitle(state.board?.title);
   const table = useSharedRows(state.board?.kind === "table" ? token : undefined);
 
   if (state.error)
