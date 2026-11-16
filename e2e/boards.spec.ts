@@ -197,6 +197,33 @@ test("adds a task with Enter in the formatted editor", async ({ page, request })
     .toBe("- [ ] Visa\n- [ ] Pillow\n- [ ] Bike\n  - [ ] Helmet\n  - [ ] Charger\n");
 });
 
+test("keeps Edit and Done in reach, and the reader's place, on a long board", async ({
+  page,
+  request,
+}) => {
+  const session = await signIn(page);
+  const content = Array.from({ length: 200 }, (_, i) => `Line ${i + 1}.`).join("\n\n");
+  await seed(request, session, { title: "e2e Long", kind: "markdown", content });
+  await open(page, "e2e Long");
+  const line = page.getByText("Line 120.", { exact: true });
+  const top = async () => (await line.boundingBox())!.y;
+  await page.evaluate((by) => window.scrollBy(0, by), (await top()) - 150);
+  const read = await top();
+  // The line at the top stays put; the editor spaces paragraphs its own way, so one just below it may shift a little.
+  const inPlace = () => expect.poll(async () => Math.abs((await top()) - read)).toBeLessThan(30);
+
+  await expect(page.getByRole("button", { name: "Edit" })).toBeInViewport();
+  await page.getByRole("button", { name: "Edit" }).click();
+  await expect(page.getByLabel("Content")).toBeVisible();
+  await inPlace();
+  await expect(page.getByLabel("Content")).not.toBeFocused();
+
+  await expect(page.getByRole("button", { name: "Done" })).toBeInViewport();
+  await page.getByRole("button", { name: "Done" }).click();
+  await expect(page.getByRole("button", { name: "Edit" })).toBeInViewport();
+  await inPlace();
+});
+
 test("makes a board, writes it formatted and as source, and deletes it", async ({
   page,
   request,

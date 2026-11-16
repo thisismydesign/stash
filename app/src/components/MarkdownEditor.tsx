@@ -64,13 +64,15 @@ const extensions = [
   Placeholder.configure({ placeholder: "Write anything." }),
 ];
 
-/** Markdown, shown rendered and edited in place; `onChange` gets the source after each edit. */
+/** Markdown, shown rendered and edited in place; `onChange` gets the source after each edit. The toolbar stays in view, `toolbarTop` down the page. */
 export function MarkdownEditor({
   initial,
   onChange,
+  toolbarTop,
 }: {
   initial: string;
   onChange: (markdown: string) => void;
+  toolbarTop: string;
 }) {
   const [content] = useState(initial);
   // Raw HTML, footnotes and the like have no formatted form: what comes back out is not what went in.
@@ -79,9 +81,13 @@ export function MarkdownEditor({
     extensions,
     content,
     contentType: "markdown",
-    autofocus: "end",
     editorProps: { attributes: { "aria-label": "Content" } },
-    onCreate: ({ editor }) => setRewrites(markdownOf(editor).trimEnd() !== content.trimEnd()),
+    onCreate: ({ editor }) => {
+      setRewrites(markdownOf(editor).trimEnd() !== content.trimEnd());
+      // Focus scrolls to the caret, at the end: a reader further up would lose their place.
+      if (editor.view.dom.getBoundingClientRect().bottom <= window.innerHeight)
+        editor.commands.focus("end");
+    },
     onUpdate: ({ editor }) => onChange(markdownOf(editor)),
   });
   const inTable = useEditorState({
@@ -96,7 +102,7 @@ export function MarkdownEditor({
           as is.
         </Text>
       )}
-      <RichTextEditor.Toolbar sticky stickyOffset="var(--app-shell-header-height)">
+      <RichTextEditor.Toolbar sticky stickyOffset={toolbarTop}>
         <RichTextEditor.ControlsGroup>
           <RichTextEditor.Bold />
           <RichTextEditor.Italic />

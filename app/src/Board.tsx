@@ -14,7 +14,8 @@ import {
   Title,
 } from "@mantine/core";
 import { IconArrowLeft, IconPencil, IconShare } from "@tabler/icons-react";
-import { useEffect, useRef, useState } from "react";
+import { useElementSize, useMergedRef } from "@mantine/hooks";
+import { useEffect, useRef, useState, type Ref } from "react";
 import type { Board, BoardKind, Column, SharedBoard, SharedRow } from "@shared/tables.ts";
 import { BoardMenu } from "./BoardMenu.tsx";
 import { KindIcon, TagBadges, cleanTags, unique } from "./Boards.tsx";
@@ -27,6 +28,7 @@ import { TableView } from "./components/TableView.tsx";
 import { Todo, type ActiveTab, type TabEdits } from "./components/Todo.tsx";
 import { useBoards } from "./lib/boards.tsx";
 import { ago } from "./lib/format.ts";
+import { placeIn, returnTo, type Place } from "./lib/place.ts";
 import { useRows, type RowEdits } from "./lib/rows.tsx";
 import { addTab, settle, toggleTab, toggleTask } from "./lib/todo.ts";
 import { useLocalState } from "./lib/useLocalState.ts";
@@ -146,11 +148,15 @@ function Editor({
   kind,
   tags,
   onChange,
+  body,
+  toolbarTop,
 }: {
   draft: Draft;
   kind: BoardKind;
   tags: string[];
   onChange: (d: Draft) => void;
+  body: Ref<HTMLDivElement>;
+  toolbarTop: string;
 }) {
   const [view, setView] = useLocalState<View>("editor", "formatted");
   const markdown = kind === "todo" || kind === "markdown";
@@ -186,28 +192,33 @@ function Editor({
           />
         </Group>
       )}
-      {kind === "table" ? (
-        <ColumnsEditor
-          columns={draft.columns}
-          onChange={(columns) => onChange({ ...draft, columns })}
-        />
-      ) : formatted ? (
-        <MarkdownEditor
-          initial={draft.content}
-          onChange={(content) => onChange({ ...draft, content })}
-        />
-      ) : (
-        <Textarea
-          aria-label="Content"
-          autosize
-          minRows={14}
-          spellCheck={markdown}
-          placeholder={PLACEHOLDER[kind]}
-          value={draft.content}
-          onChange={(e) => onChange({ ...draft, content: e.currentTarget.value })}
-          styles={{ input: { fontFamily: "var(--mantine-font-family-monospace)", fontSize: 13 } }}
-        />
-      )}
+      <div ref={body}>
+        {kind === "table" ? (
+          <ColumnsEditor
+            columns={draft.columns}
+            onChange={(columns) => onChange({ ...draft, columns })}
+          />
+        ) : formatted ? (
+          <MarkdownEditor
+            initial={draft.content}
+            onChange={(content) => onChange({ ...draft, content })}
+            toolbarTop={toolbarTop}
+          />
+        ) : (
+          <Textarea
+            aria-label="Content"
+            autosize
+            minRows={14}
+            spellCheck={markdown}
+            placeholder={PLACEHOLDER[kind]}
+            value={draft.content}
+            onChange={(e) => onChange({ ...draft, content: e.currentTarget.value })}
+            styles={{
+              input: { fontFamily: "var(--mantine-font-family-monospace)", fontSize: 13 },
+            }}
+          />
+        )}
+      </div>
     </Stack>
   );
 }
@@ -226,7 +237,25 @@ export function BoardPage({ id, onBack }: { id: string; onBack: () => void }) {
   // Only typing is saved: a draft left untouched must not overwrite what someone else wrote meanwhile.
   const written = useRef<Draft>(undefined);
   const dirty = !!draft && draft !== written.current;
+  const bar = useRef<HTMLDivElement>(null);
+  const { ref: sized, height: barHeight } = useElementSize();
+  const barRef = useMergedRef(bar, sized);
+  const body = useRef<HTMLDivElement>(null);
+  const place = useRef<Place>(undefined);
+  const keepPlace = () => {
+    if (!bar.current || !body.current) return;
+    place.current = placeIn(body.current, bar.current.getBoundingClientRect().bottom);
+  };
+  const editing = !!draft;
+  useEffect(() => {
+    const kept = place.current;
+    if (!kept) return;
+    // Before the next paint rather than at once: in development React mounts the editor twice, and the page is short in between.
+    const frame = requestAnimationFrame(() => body.current && returnTo(body.current, kept));
+    return () => cancelAnimationFrame(frame);
+  }, [editing]);
   const edit = (board: Board) => {
+    keepPlace();
     written.current = draftOf(board);
     setDraft(written.current);
   };
@@ -305,6 +334,7 @@ export function BoardPage({ id, onBack }: { id: string; onBack: () => void }) {
     draft &&
     run(async () => {
       await update(board.id, inputOf(draft, board));
+      keepPlace();
       setDraft(null);
     });
   const write = (content: string) => void run(() => update(board.id, { content }));
@@ -328,7 +358,22 @@ export function BoardPage({ id, onBack }: { id: string; onBack: () => void }) {
         }
       }}
     >
-      <Group justify="space-between" wrap="nowrap" align="flex-start">
+      <Group
+        ref={barRef}
+        justify="space-between"
+        wrap="nowrap"
+        align="flex-start"
+        pos="sticky"
+        top="var(--app-shell-header-height)"
+        py="xs"
+        my="calc(-1 * var(--mantine-spacing-xs))"
+        // What scrolls under the bar fades out behind its bottom padding; the editor's toolbar tucks in there.
+        style={{
+          zIndex: 10,
+          background:
+            "linear-gradient(var(--mantine-color-body) calc(100% - var(--mantine-spacing-xs)), transparent)",
+        }}
+      >
         <Group gap="xs" wrap="nowrap" style={{ minWidth: 0, flex: 1 }}>
           <ActionIcon variant="subtle" size="lg" aria-label="All boards" onClick={onBack}>
             <IconArrowLeft size={20} />
@@ -400,9 +445,16 @@ export function BoardPage({ id, onBack }: { id: string; onBack: () => void }) {
       )}
 
       {draft ? (
-        <Editor draft={draft} kind={board.kind} tags={tags} onChange={setDraft} />
+        <Editor
+          draft={draft}
+          kind={board.kind}
+          tags={tags}
+          onChange={setDraft}
+          body={body}
+          toolbarTop={`calc(var(--app-shell-header-height) + ${barHeight}px - var(--mantine-spacing-xs))`}
+        />
       ) : (
-        <>
+        <Stack ref={body} gap="sm" style={{ flex: 1 }}>
           {board.image && <Picture src={pictureSrc(board.image)} height={200} radius="md" />}
           <BoardContent
             board={board}
@@ -416,7 +468,7 @@ export function BoardPage({ id, onBack }: { id: string; onBack: () => void }) {
               onColumns: (columns) => update(board.id, { columns }),
             }}
           />
-        </>
+        </Stack>
       )}
     </Stack>
   );

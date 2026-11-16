@@ -41,6 +41,11 @@
   text-decoration: none;
 }
 
+/* Mantine lifts every div in the editor above its toolbar, meaning the bubble menu; a task's text is a div too, and would scroll over the toolbar. */
+.markdown li[data-checked] > div {
+  z-index: auto;
+}
+
 .markdown p:last-child {
   margin-bottom: 0;
 }
